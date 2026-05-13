@@ -58,7 +58,10 @@ Never hardcode API keys, tokens, passwords, or any credentials in any file. All 
 
 ## Workflow
 
-GitHub is connected via the GitHub MCP server. Use MCP tools for all GitHub actions (creating issues, opening PRs, merging, commenting) — do not use the `gh` CLI or `git push` unless MCP is unavailable.
+Two tools are available for GitHub work — use the right one for the job:
+
+- **Git CLI** (`git commit`, `git push`, `git status`, etc.) — use for all local git operations. Faster and more token-efficient than MCP for these tasks.
+- **GitHub MCP server** (`mcp__plugin_github_github__*`) — use for GitHub API actions: creating issues, opening PRs, merging, commenting, reviewing, and reading GitHub data.
 
 **Before starting any major task:**
 1. Create a GitHub issue describing the work using the MCP server. Note the issue number.
