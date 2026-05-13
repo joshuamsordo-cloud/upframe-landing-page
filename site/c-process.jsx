@@ -1,5 +1,5 @@
 /* global React */
-const { useState: useStateTl, useEffect: useEffectTl, useRef: useRefTl } = React;
+const { useState: useStateTl, useEffect: useEffectTl } = React;
 
 const STEPS = [
   { day: 1,  lbl: '15-minute call', h: 'Discovery call', d: "We map the leaks — missed calls, late quotes, dead reviews — and put a number on each. No pitch deck. If the math doesn't move, we'll tell you.", meta: 'DAY 1 · 15 MIN · FREE' },
@@ -9,70 +9,36 @@ const STEPS = [
   { day: 45, lbl: 'Systems compound', h: 'Business runs on systems', d: "Voice agent answering after-hours. Quotes following up themselves. You're focused on growth, not admin.", meta: 'DAY 45 · COMPOUNDING' },
 ];
 
+const STAGE_MS = 3200;       // dwell per stage
+const HOLD_LAST_MS = 1500;   // extra pause at the final stage before looping
+const PAUSE_AFTER_CLICK_MS = 5000;
+
 function ProcessSection() {
-  const [day, setDay] = useStateTl(1);   // current chosen day along timeline
-  const [auto, setAuto] = useStateTl(true);
-  const [isDragging, setIsDragging] = useStateTl(false);
-  const trackRef = useRefTl(null);
-  const draggingRef = useRefTl(false);
-  const interactedRef = useRefTl(false);
+  const [stageIdx, setStageIdx] = useStateTl(0);
+  const [paused, setPaused] = useStateTl(false);
 
-  // auto-advance loop
   useEffectTl(() => {
-    if (!auto) return;
-    let raf;
-    let last = performance.now();
-    const tick = (now) => {
-      const dt = now - last; last = now;
-      setDay(d => {
-        // advance ~1 day per 600ms; wrap around
-        const next = d + dt / 600;
-        if (next > 45) return 1;
-        return next;
-      });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [auto]);
-
-  const dayToPct = (d) => Math.max(0, Math.min(1, (d - 1) / 44));
-  const pctToDay = (p) => 1 + p * 44;
-
-  const onPointerDown = (e) => {
-    draggingRef.current = true;
-    setIsDragging(true);
-    interactedRef.current = true;
-    setAuto(false);
-    handlePointer(e);
-    e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e) => { if (draggingRef.current) handlePointer(e); };
-  const onPointerUp = () => { draggingRef.current = false; setIsDragging(false); };
-
-  const handlePointer = (e) => {
-    if (!trackRef.current) return;
-    const rect = trackRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    setDay(pctToDay(x));
-  };
-
-  // resume auto after 6s of no interaction
-  useEffectTl(() => {
-    if (auto) return;
-    const t = setTimeout(() => { setAuto(true); interactedRef.current = false; }, 6000);
+    if (paused) return;
+    const dwell = stageIdx === STEPS.length - 1 ? STAGE_MS + HOLD_LAST_MS : STAGE_MS;
+    const t = setTimeout(() => {
+      setStageIdx(i => (i + 1) % STEPS.length);
+    }, dwell);
     return () => clearTimeout(t);
-  }, [auto, day]);
+  }, [paused, stageIdx]);
 
-  const currentIdx = (() => {
-    // last step whose day <= current
-    let idx = 0;
-    for (let i = 0; i < STEPS.length; i++) if (STEPS[i].day <= day + 0.5) idx = i;
-    return idx;
-  })();
-  const current = STEPS[currentIdx];
+  useEffectTl(() => {
+    if (!paused) return;
+    const t = setTimeout(() => setPaused(false), PAUSE_AFTER_CLICK_MS);
+    return () => clearTimeout(t);
+  }, [paused]);
 
-  const fillPct = dayToPct(day) * 100;
+  const jumpTo = (i) => {
+    setStageIdx(i);
+    setPaused(true);
+  };
+
+  const fillPct = STEPS.length > 1 ? (stageIdx / (STEPS.length - 1)) * 100 : 0;
+  const current = STEPS[stageIdx];
 
   return (
     <section className="uf-section" id="process">
@@ -80,32 +46,30 @@ function ProcessSection() {
         <div className="uf-sech">
           <Eyebrow>HOW IT GOES</Eyebrow>
           <h2 className="uf-sech__h">From first call <span className="mint">to running systems.</span></h2>
-          <p className="uf-sech__sub">Drag the handle, or let it run. No handover at the end — we build, run, and tune.</p>
+          <p className="uf-sech__sub">Auto-advances through each stage. Click any node to jump back — it picks up again after a few seconds.</p>
         </div>
 
         <div className="uf-timeline">
-          <div className={"uf-timeline__autohint " + (auto ? 'live' : '')}>
+          <div className={"uf-timeline__autohint " + (paused ? '' : 'live')}>
             <span className="dot" />
-            {auto ? 'AUTO · DRAG TO PAUSE' : 'PAUSED · RESUMES IN A FEW'}
+            {paused ? 'PAUSED · RESUMES IN A FEW' : 'AUTO'}
           </div>
 
-          <div className="uf-timeline__track" ref={trackRef}
-               onPointerDown={onPointerDown}
-               onPointerMove={onPointerMove}
-               onPointerUp={onPointerUp}
-               onPointerCancel={onPointerUp}>
+          <div className="uf-timeline__track">
             <div className="uf-timeline__fill" style={{ width: fillPct + '%' }} />
 
             {STEPS.map((s, i) => {
-              const pct = dayToPct(s.day) * 100;
-              const reached = s.day <= day + 0.5;
-              const active = i === currentIdx;
+              const pct = STEPS.length > 1 ? (i / (STEPS.length - 1)) * 100 : 0;
+              const reached = i <= stageIdx;
+              const active = i === stageIdx;
               return (
-                <React.Fragment key={s.day}>  {/* key prop requires React.Fragment, not shorthand */}
-                  <div
+                <React.Fragment key={s.day}>
+                  <button
+                    type="button"
                     className={"uf-timeline__node " + (reached ? 'reached ' : '') + (active ? 'active' : '')}
                     style={{ left: pct + '%' }}
-                    onClick={(e) => { e.stopPropagation(); setAuto(false); setDay(s.day); }}
+                    onClick={() => jumpTo(i)}
+                    aria-label={`Go to ${s.lbl}`}
                   />
                   <div className={"uf-timeline__caption " + (reached ? 'reached ' : '') + (active ? 'active' : '')}
                        style={{ left: pct + '%' }}>
@@ -116,8 +80,7 @@ function ProcessSection() {
               );
             })}
 
-            <div className={"uf-timeline__handle" + (isDragging ? ' dragging' : '')}
-                 style={{ left: fillPct + '%' }} />
+            <div className="uf-timeline__handle" style={{ left: fillPct + '%' }} />
           </div>
 
           <div className="uf-timeline__panel">

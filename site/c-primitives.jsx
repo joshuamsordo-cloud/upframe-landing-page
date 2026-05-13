@@ -1,4 +1,5 @@
 /* global React */
+const { useState: useStatePr, useEffect: useEffectPr } = React;
 
 /* ----------------------------- Primitives ----------------------------- */
 
@@ -16,9 +17,16 @@ const Eyebrow = ({ children, amber, dot, pulse }) => (
   </span>
 );
 
+const ArrowIcon = () => (
+  <svg className="uf-arrow__svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 12h14" />
+    <path d="M13 6l6 6-6 6" />
+  </svg>
+);
+
 const Btn = ({ variant = 'primary', size, arrow, children, onClick, type }) => (
   <button type={type || 'button'} className={`uf-btn uf-btn--${variant}${size ? ' uf-btn--' + size : ''}`} onClick={onClick}>
-    {children}{arrow && <span className="uf-arrow">{arrow}</span>}
+    {children}{arrow && <span className="uf-arrow"><ArrowIcon /></span>}
   </button>
 );
 
@@ -32,8 +40,7 @@ const Nav = ({ onBook }) => {
   return (
     <nav className="uf-nav">
       <div className="uf-nav__brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-        <Mark size={26} />
-        <Wordmark />
+        <img src="assets/logo-text.png" alt="Upframe AI" className="uf-nav__logo" draggable="false" />
       </div>
       <div className="uf-nav__center">
         <span className="uf-nav__link" onClick={() => goSection('leak')}>The leak</span>
@@ -44,22 +51,95 @@ const Nav = ({ onBook }) => {
       </div>
       <div className="uf-nav__cta">
         <span className="uf-nav__live"><span className="dot" />Booking · Jun</span>
-        <Btn variant="primary" arrow="↗" onClick={onBook}>Book a call</Btn>
+        <Btn variant="primary" arrow onClick={onBook}>Book a call</Btn>
       </div>
     </nav>
+  );
+};
+
+/* ----------------------------- Event feed ----------------------------- */
+
+const FEED_POOL = [
+  { tag: 'AGENT', text: 'Voice agent answered call', val: '23s' },
+  { tag: 'AGENT', text: 'Lead qualified · plumbing',  val: '+$480' },
+  { tag: 'AGENT', text: 'After-hours booking · drain', val: '+$640' },
+  { tag: 'AGENT', text: 'SMS reply handled · quote',  val: '+$320' },
+  { tag: 'FLOW',  text: 'Quote → CRM → SMS',           val: '4 steps' },
+  { tag: 'FLOW',  text: 'Review request sent',         val: '★ 4.9' },
+  { tag: 'FLOW',  text: 'No-show recovery triggered',  val: '+$210' },
+  { tag: 'FLOW',  text: 'Invoice follow-up · Day 3',   val: 'auto' },
+  { tag: 'SITE',  text: 'Form filled · sealcoat',      val: '+$540' },
+  { tag: 'SITE',  text: 'Conversion · 8.4%',           val: '+1.2pt' },
+  { tag: 'SITE',  text: 'Phone tap · service page',    val: '+$0' },
+  { tag: 'SITE',  text: 'Booking widget · 22:47',      val: '+$390' },
+];
+
+const FEED_SIZE = 5;
+const FEED_INTERVAL_MS = 1600;
+
+const formatAge = (ageMs) => {
+  if (ageMs < 1000) return 'just now';
+  const s = Math.floor(ageMs / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  return m + 'm';
+};
+
+const EventFeed = () => {
+  const [rows, setRows] = useStatePr([]);
+  const [now, setNow] = useStatePr(0);
+
+  useEffectPr(() => {
+    // Seed once on mount so addedAt timestamps stay stable across re-renders.
+    const t0 = Date.now();
+    setRows(Array.from({ length: FEED_SIZE }, (_, i) => {
+      const tpl = FEED_POOL[Math.floor(Math.random() * FEED_POOL.length)];
+      return { id: t0 - i, ...tpl, addedAt: t0 - i * 4000 };
+    }));
+    setNow(t0);
+
+    let idCounter = t0 + 1;
+    let lastIdx = -1;
+    const add = setInterval(() => {
+      let idx = Math.floor(Math.random() * FEED_POOL.length);
+      if (idx === lastIdx) idx = (idx + 1) % FEED_POOL.length;
+      lastIdx = idx;
+      const tpl = FEED_POOL[idx];
+      const t = Date.now();
+      setRows(prev => [{ id: ++idCounter, ...tpl, addedAt: t }, ...prev].slice(0, FEED_SIZE));
+      setNow(t);
+    }, FEED_INTERVAL_MS);
+    const re = setInterval(() => setNow(Date.now()), 1000);
+    return () => { clearInterval(add); clearInterval(re); };
+  }, []);
+
+  return (
+    <div className="uf-feed">
+      <div className="uf-feed__head">
+        <span className="uf-feed__title">Live · today</span>
+        <span className="uf-feed__live"><span className="uf-feed__dot" />Monitoring</span>
+      </div>
+      <div className="uf-feed__list">
+        {rows.map((r, i) => {
+          const age = now - r.addedAt;
+          const isNew = i === 0 && age < 700;
+          const isAmber = /\$0|−|missed/i.test(r.val + ' ' + r.text);
+          return (
+            <div key={r.id} className={"uf-feed__row" + (isNew ? ' uf-feed__row--new' : '')}>
+              <span className={"uf-feed__tag uf-feed__tag--" + r.tag.toLowerCase()}>{r.tag}</span>
+              <span className="uf-feed__text">{r.text}</span>
+              <span className={"uf-feed__val" + (isAmber ? ' amber' : '')}>{r.val}<span className="uf-feed__age">{formatAge(age)}</span></span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 };
 
 /* ----------------------------- Hero ----------------------------- */
 
 const Hero = ({ onBook }) => {
-  const events = [
-    { time: '02:14', what: <span>Voice agent booked <span className="muted">· clogged drain</span></span>, val: '+$480', cls: '' },
-    { time: '02:09', what: <span>Quote follow-up sent <span className="muted">· #4421</span></span>, val: '+5 min', cls: '' },
-    { time: '02:03', what: <span>Review request <span className="muted">· Halcomb HVAC</span></span>, val: '★ 5.0', cls: '' },
-    { time: '01:58', what: <span>Missed call <span className="muted">· no system</span></span>, val: '−$640', cls: 'amber' },
-    { time: '01:51', what: <span>Inbound chat → quote <span className="muted">· auto</span></span>, val: '+$1.2k', cls: '' },
-  ];
   return (
     <section className="uf-section uf-section--hero uf-hero" id="top">
       <div className="uf-dotgrid uf-dotgrid--steel" />
@@ -72,7 +152,7 @@ const Hero = ({ onBook }) => {
             Less drag. More momentum.
           </p>
           <div className="uf-hero__cta">
-            <Btn variant="primary" size="lg" arrow="↗" onClick={onBook}>Book a call</Btn>
+            <Btn variant="primary" size="lg" arrow onClick={onBook}>Book a call</Btn>
             <Btn variant="secondary" size="lg" onClick={() => {
               const el = document.getElementById('leak');
               if (el) window.scrollTo({ top: el.offsetTop - 64, behavior: 'smooth' });
@@ -80,22 +160,10 @@ const Hero = ({ onBook }) => {
             <span className="uf-hero__hint">30 min · no card · no pitch</span>
           </div>
         </div>
-        <div className="uf-tick">
-          <div className="uf-tick__head">
-            <span className="uf-tick__title">Live · today</span>
-            <span className="uf-tick__live"><span className="uf-tick__dot" />Booking</span>
-          </div>
-          {events.map((e, i) => (
-            <div className="uf-tick__row" key={i}>
-              <span className="uf-tick__time">{e.time}</span>
-              <span className="uf-tick__what">{e.what}</span>
-              <span className={"uf-tick__val " + e.cls}>{e.val}</span>
-            </div>
-          ))}
-        </div>
+        <EventFeed />
       </div>
     </section>
   );
 };
 
-Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero });
+Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero, EventFeed });

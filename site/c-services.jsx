@@ -28,66 +28,158 @@ function MiniSite() {
   );
 }
 
-/* Node graph for "Workflow Automation" — pulses traveling through */
+/* ============================ Workflow Graph ==========================
+   N8N-inspired sequential workflow. Rounded-rect nodes connected by
+   bezier curves. Each "step" lights up a node and animates a mint
+   gradient sweep along the outgoing edge before the next node activates.
+   ===================================================================== */
+
+// Each node: id, x/y in viewBox 100x70 coords, label, sub
+const FLOW_NODES = [
+  { id: 'webhook', x: 10, y: 35, lbl: 'Webhook',  sub: 'quote sent' },
+  { id: 'wait',    x: 30, y: 35, lbl: 'Wait 5m',  sub: 'delay' },
+  { id: 'sms',     x: 50, y: 35, lbl: 'Send SMS', sub: 'twilio' },
+  { id: 'branch',  x: 70, y: 35, lbl: 'Replied?', sub: 'branch' },
+  { id: 'crm',     x: 90, y: 18, lbl: 'Update CRM', sub: 'booked' },
+  { id: 'retry',   x: 90, y: 52, lbl: 'Re-send',    sub: 'day 2' },
+];
+
+// Edge list — last two are the branch outputs (yes -> crm, no -> retry)
+const FLOW_EDGES = [
+  { from: 0, to: 1 },
+  { from: 1, to: 2 },
+  { from: 2, to: 3 },
+  { from: 3, to: 4 }, // yes branch
+  { from: 3, to: 5 }, // no  branch
+];
+
+// Sequence of node-indices to highlight per cycle. Branch alternates.
+const FLOW_LINEAR = [0, 1, 2, 3];
+const STEP_MS = 900;
+
 function NodeGraph() {
-  const [tick, setTick] = useStateSvc(0);
+  const [step, setStep] = useStateSvc(0);
+  const [branchYes, setBranchYes] = useStateSvc(true);
+
   useEffectSvc(() => {
-    const id = setInterval(() => setTick(t => (t + 1) % 100), 80);
+    const id = setInterval(() => {
+      setStep(s => {
+        const total = FLOW_LINEAR.length + 1; // +1 for branch leg
+        const next = s + 1;
+        if (next > total) {
+          setBranchYes(b => !b);
+          return 0;
+        }
+        return next;
+      });
+    }, STEP_MS);
     return () => clearInterval(id);
   }, []);
 
-  // Path: A(0) → B(1) → C(2) → D(3) (5 segments around)
-  const nodes = [
-    { x: 12, y: 50, lbl: 'Trigger', tag: 'Quote sent', cls: 'in' },
-    { x: 38, y: 22, lbl: 'Wait 5m', tag: 'delay' },
-    { x: 50, y: 78, lbl: 'Send SMS', tag: 'twilio' },
-    { x: 72, y: 32, lbl: 'Review ask', tag: 'auto' },
-    { x: 90, y: 60, lbl: 'Booked', tag: 'out', cls: 'out' },
-  ];
-  const edges = [
-    [0, 1], [1, 2], [2, 3], [3, 4], [0, 2],
-  ];
-  // Pulse progress along each edge (0..1), staggered
-  const t = tick / 100;
-  const pulses = edges.map((_, i) => ((t + i * 0.18) % 1));
+  // active node index (in FLOW_NODES) per step:
+  //   step 0 → none (idle)
+  //   step 1..LINEAR.length → FLOW_LINEAR[step-1]
+  //   step LINEAR.length+1 → branch leg (4 or 5)
+  let activeIdx = -1;
+  if (step >= 1 && step <= FLOW_LINEAR.length) {
+    activeIdx = FLOW_LINEAR[step - 1];
+  } else if (step === FLOW_LINEAR.length + 1) {
+    activeIdx = branchYes ? 4 : 5;
+  }
+  const completedIdxSet = new Set();
+  for (let s = 1; s <= step; s++) {
+    if (s <= FLOW_LINEAR.length) completedIdxSet.add(FLOW_LINEAR[s - 1]);
+    else completedIdxSet.add(branchYes ? 4 : 5);
+  }
+  const activeEdgeKey = (() => {
+    if (activeIdx < 0) return null;
+    return activeIdx; // 'to' of the edge that just animated
+  })();
+
+  // helper — bezier path between two nodes
+  const NODE_W = 16, NODE_H = 10;
+  const path = (a, b) => {
+    const x1 = a.x + NODE_W / 2;
+    const y1 = a.y;
+    const x2 = b.x - NODE_W / 2;
+    const y2 = b.y;
+    const dx = (x2 - x1) * 0.5;
+    return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+  };
 
   return (
-    <div className="uf-graph">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
-        {edges.map(([a, b], i) => {
-          const na = nodes[a], nb = nodes[b];
+    <div className="uf-flow">
+      <svg viewBox="0 0 100 70" preserveAspectRatio="xMidYMid meet" className="uf-flow__svg">
+        <defs>
+          <linearGradient id="uf-flow-grad" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%"   stopColor="rgba(134,239,172,0)" />
+            <stop offset="50%"  stopColor="rgba(134,239,172,0.95)" />
+            <stop offset="100%" stopColor="rgba(134,239,172,0)" />
+          </linearGradient>
+          <filter id="uf-flow-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="0.8" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+
+        {/* edges — base */}
+        {FLOW_EDGES.map((e, i) => {
+          const a = FLOW_NODES[e.from], b = FLOW_NODES[e.to];
+          const isYesLeg = i === 3, isNoLeg = i === 4;
+          const branchHidden = (isYesLeg && !branchYes && step > FLOW_LINEAR.length) ||
+                               (isNoLeg && branchYes && step > FLOW_LINEAR.length);
+          const isActiveEdge = activeEdgeKey === e.to && step > 0;
           return (
-            <line key={i}
-              x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
-              stroke="#3A3A3A" strokeWidth="0.5" strokeDasharray="1.4 1.4" />
+            <g key={i} className={"uf-flow__edge" + (branchHidden ? ' uf-flow__edge--dim' : '')}>
+              <path d={path(a, b)} stroke="var(--steel-2)" strokeWidth="0.4" fill="none" />
+              {isActiveEdge && (
+                <path d={path(a, b)} stroke="url(#uf-flow-grad)" strokeWidth="0.9" fill="none"
+                      strokeDasharray="6 30" className="uf-flow__edge-sweep" />
+              )}
+            </g>
           );
         })}
-        {edges.map(([a, b], i) => {
-          const na = nodes[a], nb = nodes[b];
-          const p = pulses[i];
-          const cx = na.x + (nb.x - na.x) * p;
-          const cy = na.y + (nb.y - na.y) * p;
+
+        {/* nodes */}
+        {FLOW_NODES.map((n, i) => {
+          const isActive = i === activeIdx;
+          const isDone = completedIdxSet.has(i) && !isActive;
+          const isStart = i === 0;
           return (
-            <g key={'p' + i}>
-              <circle cx={cx} cy={cy} r="1.6" fill="#86EFAC" />
-              <circle cx={cx} cy={cy} r="3.2" fill="rgba(134,239,172,0.25)" />
+            <g key={n.id}
+               className={"uf-flow__node" +
+                 (isActive ? ' is-active' : '') +
+                 (isDone   ? ' is-done'   : '') +
+                 (isStart  ? ' is-start'  : '')}
+               style={{ transform: `translate(${n.x}px, ${n.y}px)` }}>
+              <rect x={-NODE_W / 2} y={-NODE_H / 2} width={NODE_W} height={NODE_H} rx="1.6"
+                    className="uf-flow__node-bg" />
+              <text x="0" y="-0.5" textAnchor="middle" className="uf-flow__node-lbl">{n.lbl}</text>
+              <text x="0" y="3.1" textAnchor="middle" className="uf-flow__node-sub">{n.sub}</text>
+              {/* tiny IO ports */}
+              <circle cx={-NODE_W / 2} cy="0" r="0.7" className="uf-flow__node-port" />
+              <circle cx={NODE_W / 2}  cy="0" r="0.7" className="uf-flow__node-port" />
             </g>
           );
         })}
       </svg>
-      <div className="uf-graph__nodes">
-        {nodes.map((n, i) => (
-          <div key={i} className={"uf-graph__node " + (n.cls || '')} style={{ left: n.x + '%', top: n.y + '%' }}>
-            <span>{n.lbl}</span>
-            <span className="tag">{n.tag}</span>
-          </div>
-        ))}
+      <div className="uf-flow__caption">
+        <span className="uf-flow__dot" />
+        <span>{step === 0 ? 'Waiting · webhook' : (
+          activeIdx === 4 ? 'Replied → booked' :
+          activeIdx === 5 ? 'No reply → re-send' :
+          FLOW_NODES[activeIdx] ? 'Running · ' + FLOW_NODES[activeIdx].lbl.toLowerCase() : 'Cycle complete'
+        )}</span>
       </div>
     </div>
   );
 }
 
-/* Agent chat — looping sample exchange */
+/* ============================ Agent Chat ============================
+   Sliding window: at most 3 messages on screen. New messages enter
+   from the bottom; oldest drops out at the top. Card height is fixed.
+   ===================================================================== */
+
 const AGENT_SCRIPT = [
   { role: 'caller', who: 'Caller', text: 'Hi, my water heater is leaking onto the floor.' },
   { role: 'agent',  who: 'Agent',  text: 'Sorry to hear that. Have you shut off the cold supply at the top?' },
@@ -97,31 +189,47 @@ const AGENT_SCRIPT = [
   { role: 'agent',  who: 'Agent',  text: 'Booked — Tuesday 9:00am backup. You\'ll get a text confirmation.' },
 ];
 
+const VISIBLE_MSGS = 3;
+const MSG_INTERVAL_MS = 1700;
+const TYPING_MS = 600;
+
 function AgentChat() {
-  const [shown, setShown] = useStateSvc(1);
+  const [visible, setVisible] = useStateSvc([{ ...AGENT_SCRIPT[0], key: 0 }]);
   const [typing, setTyping] = useStateSvc(false);
+  const [nextMsg, setNextMsg] = useStateSvc(AGENT_SCRIPT[1]);
+
   useEffectSvc(() => {
     let cancelled = false;
-    const tick = async () => {
+    let idx = 1;
+    let key = 1;
+    const advance = async () => {
       while (!cancelled) {
-        await new Promise(r => setTimeout(r, 1400));
+        const upcoming = idx >= AGENT_SCRIPT.length ? AGENT_SCRIPT[0] : AGENT_SCRIPT[idx];
+        setNextMsg(upcoming);
+        await new Promise(r => setTimeout(r, MSG_INTERVAL_MS - TYPING_MS));
         if (cancelled) return;
-        if (shown >= AGENT_SCRIPT.length) {
-          await new Promise(r => setTimeout(r, 2000));
-          if (cancelled) return;
-          setShown(1);
-          continue;
-        }
         setTyping(true);
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, TYPING_MS));
         if (cancelled) return;
         setTyping(false);
-        setShown(s => Math.min(s + 1, AGENT_SCRIPT.length));
+        if (idx >= AGENT_SCRIPT.length) {
+          key += 1;
+          setVisible([{ ...AGENT_SCRIPT[0], key }]);
+          idx = 1;
+        } else {
+          key += 1;
+          const msg = { ...AGENT_SCRIPT[idx], key };
+          idx += 1;
+          setVisible(prev => [...prev, msg].slice(-VISIBLE_MSGS));
+        }
       }
     };
-    tick();
+    advance();
     return () => { cancelled = true; };
-  }, [shown]);
+  }, []);
+
+  const nextSpeaker = nextMsg ? nextMsg.who  : 'Agent';
+  const nextRole    = nextMsg ? nextMsg.role : 'agent';
 
   return (
     <div className="uf-agent-chat">
@@ -130,22 +238,24 @@ function AgentChat() {
         <span className="lbl">Live · Voice agent</span>
         <span className="who">+1 (503) 555 · 22:47</span>
       </div>
-      {AGENT_SCRIPT.slice(0, shown).map((m, i) => (
-        <div key={i} className={"uf-msg " + (m.role === 'caller' ? 'me' : 'agent')}>
-          <div>
-            <div className="uf-msg__role">{m.who}</div>
-            <div className="uf-msg__bubble">{m.text}</div>
+      <div className="uf-agent-chat__list">
+        {visible.map(m => (
+          <div key={m.key} className={"uf-msg " + (m.role === 'caller' ? 'me' : 'agent')}>
+            <div>
+              <div className="uf-msg__role">{m.who}</div>
+              <div className="uf-msg__bubble">{m.text}</div>
+            </div>
           </div>
-        </div>
-      ))}
-      {typing && shown < AGENT_SCRIPT.length && (
-        <div className="uf-msg agent">
-          <div>
-            <div className="uf-msg__role">{AGENT_SCRIPT[shown].who}</div>
-            <div className="uf-msg__bubble"><span className="uf-msg__typing"><span /><span /><span /></span></div>
+        ))}
+        {typing && (
+          <div className={"uf-msg uf-msg--typing " + (nextRole === 'caller' ? 'me' : 'agent')}>
+            <div>
+              <div className="uf-msg__role">{nextSpeaker}</div>
+              <div className="uf-msg__bubble"><span className="uf-msg__typing"><span /><span /><span /></span></div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
