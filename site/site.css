@@ -17,6 +17,16 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   background-image: radial-gradient(rgba(58,58,58,0.55) 1px, transparent 1.4px);
 }
 
+/* Interactive hero dot field — canvas overlay that replaces the static
+   .uf-dotgrid--steel inside the hero. Listeners attach to the parent .uf-hero
+   so we can keep pointer-events: none here and let clicks through. */
+.uf-hero__dots {
+  position: absolute; inset: 0; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 12%, black 80%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 80%, transparent);
+}
+.uf-hero__dots canvas { display: block; }
+
 /* ============ Layout ============ */
 .uf-page { min-height: 100vh; display: flex; flex-direction: column; }
 .uf-container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
@@ -34,7 +44,7 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   border-bottom: 1px solid var(--steel);
 }
 .uf-nav__brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.uf-nav__logo { height: 40px; width: auto; display: block; }
+.uf-nav__logo { height: 32px; width: 32px; display: block; }
 .uf-nav__mark { width: 26px; height: 26px; display: block; }
 .uf-nav__wm { font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.03em; display: flex; gap: 1px; align-items: baseline; }
 .uf-nav__wm .up { color: var(--cloud); }
@@ -95,10 +105,10 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
 /* ============ Section heads ============ */
 .uf-sech { max-width: 760px; margin-bottom: 64px; }
 .uf-sech--center { margin-left: auto; margin-right: auto; text-align: center; }
-.uf-sech__h {
-  font-family: var(--font-display); font-weight: 500;
-  font-size: clamp(44px, 5.4vw, 72px); line-height: 1.02;
-  letter-spacing: -0.035em; color: var(--cloud); margin: 14px 0 18px;
+.upframe .uf-sech__h {
+  font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(56px, 7vw, 96px); line-height: 0.98;
+  letter-spacing: -0.04em; color: var(--cloud); margin: 14px 0 18px;
 }
 .uf-sech__h .mint { color: var(--mint); }
 .uf-sech__h .amber { color: var(--amber); }
@@ -113,10 +123,10 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
     var(--void);
 }
 .uf-hero__inner { position: relative; z-index: 2; display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 64px; align-items: center; }
-.uf-hero__h {
+.upframe .uf-hero__h {
   font-family: var(--font-display); font-weight: 300;
-  font-size: clamp(80px, 10.5vw, 168px);
-  line-height: 0.94; letter-spacing: -0.05em;
+  font-size: clamp(96px, 12vw, 200px);
+  line-height: 0.94; letter-spacing: -0.055em;
   color: var(--cloud); margin: 22px 0 28px;
 }
 .uf-hero__h .mint { color: var(--mint); }
@@ -221,6 +231,33 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
   fill: var(--amber);
 }
+.uf-pipe__bookedLbl {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  fill: var(--mint);
+}
+.uf-pipe__chipLbl {
+  font-family: var(--font-display); font-size: 10px; font-weight: 500; letter-spacing: -0.01em;
+}
+.uf-pipe__chipSub {
+  font-family: var(--font-mono); font-size: 8.5px; font-weight: 600; letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+/* drip droplets falling out of cracks */
+.uf-drip {
+  animation: uf-drip-fall 1.8s var(--ease-out) infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.uf-crack { --drip-delay: 0s; }
+.uf-drip--1 { animation-delay: calc(var(--drip-delay) + 0s); }
+.uf-drip--2 { animation-delay: calc(var(--drip-delay) + 0.55s); }
+.uf-drip--3 { animation-delay: calc(var(--drip-delay) + 1.10s); }
+@keyframes uf-drip-fall {
+  0%   { transform: translateY(0);    opacity: 0; }
+  18%  {                              opacity: 1; }
+  100% { transform: translateY(28px); opacity: 0; }
+}
 
 .uf-pipes__counters {
   display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
@@ -250,10 +287,15 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
 .uf-pipes__closeTxt { font-size: 16px; color: var(--cloud-2); }
 .uf-pipes__closeTxt .mint { color: var(--mint); }
 .uf-pipes__closeTxt .amber { color: var(--amber); }
-.uf-pipes__loop {
-  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--cloud-3);
+.uf-pipes__runBtn {
+  background: transparent; border: 0; padding: 6px 0;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--mint); cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: border-color 200ms var(--ease-out), color 200ms var(--ease-out);
 }
+.uf-pipes__runBtn:hover { border-bottom-color: var(--mint); color: #9af2b6; }
+.uf-pipes__runBtn:focus-visible { outline: none; border-bottom-color: var(--mint); }
 
 /* ============ Calculator ============ */
 .uf-calc {
@@ -562,12 +604,21 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
     radial-gradient(60% 50% at 50% 0%, rgba(134,239,172,0.14), transparent 60%),
     var(--void);
   text-align: center;
-  padding: 144px 0;
+  padding: 168px 0 144px;
 }
-.uf-closing__h {
-  font-family: var(--font-display); font-weight: 500;
-  font-size: clamp(58px, 7.4vw, 108px); line-height: 0.98; letter-spacing: -0.045em;
-  color: var(--cloud); margin: 18px auto 24px; max-width: 18ch;
+.uf-closing::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 140px;
+  background: linear-gradient(to bottom, var(--void-2) 0%, rgba(20,20,20,0.6) 40%, transparent 100%);
+  pointer-events: none; z-index: 1;
+}
+.uf-closing .uf-dotgrid {
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 78%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,1) 22%, rgba(0,0,0,1) 78%, transparent 100%);
+}
+.upframe .uf-closing__h {
+  font-family: var(--font-display); font-weight: 300;
+  font-size: clamp(56px, 7vw, 96px); line-height: 0.98; letter-spacing: -0.04em;
+  color: var(--cloud); margin: 18px auto 24px; max-width: 20ch;
 }
 .uf-closing__h .mint { color: var(--mint); }
 .uf-closing__sub { font-size: 18px; color: var(--cloud-2); max-width: 56ch; margin: 0 auto 36px; }
@@ -581,6 +632,9 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
 .uf-foot { padding: 64px 0 40px; border-top: 1px solid var(--steel); }
 .uf-foot__inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
 .uf-foot__brand { display: flex; flex-direction: column; gap: 14px; }
+.uf-foot__logo { display: flex; align-items: center; gap: 10px; }
+.uf-foot__logo-mark { width: 28px; height: 28px; display: block; }
+.uf-foot__logo-text { height: 20px; width: auto; display: block; }
 .uf-foot__tag { font-family: var(--font-display); font-size: 14px; color: var(--cloud-2); max-width: 28ch; line-height: 1.5; }
 .uf-foot__col-h { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--cloud-3); margin-bottom: 14px; }
 .uf-foot__link { font-size: 13.5px; color: var(--cloud-2); display: block; padding: 4px 0; cursor: pointer; transition: color 200ms; }

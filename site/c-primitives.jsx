@@ -1,5 +1,5 @@
 /* global React */
-const { useState: useStatePr, useEffect: useEffectPr } = React;
+const { useState: useStatePr, useEffect: useEffectPr, useRef: useRefPr } = React;
 
 /* ----------------------------- Primitives ----------------------------- */
 
@@ -40,7 +40,7 @@ const Nav = ({ onBook }) => {
   return (
     <nav className="uf-nav">
       <div className="uf-nav__brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-        <img src="assets/logo-text.png" alt="Upframe AI" className="uf-nav__logo" draggable="false" />
+        <img src="assets/logo-mark-mint.png" alt="Upframe AI" className="uf-nav__logo" draggable="false" />
       </div>
       <div className="uf-nav__center">
         <span className="uf-nav__link" onClick={() => goSection('leak')}>The leak</span>
@@ -137,12 +137,256 @@ const EventFeed = () => {
   );
 };
 
+/* ----------------------------- Hero dot field ----------------------------- */
+
+const DOT_SPACING = 24;
+const DOT_BASE_RADIUS = 1.0;
+const DOT_GLOW_RADIUS = 2.6;        // brighter core
+const DOT_HALO_RADIUS = 7.5;        // soft outer halo on active dots
+const HALO_ALPHA_GAIN = 0.48;       // multiplier on the outer halo (was 0.32)
+const HALO_GATE = 0.12;             // start showing halo earlier (was 0.25)
+const R_HALO = 190;                 // a touch wider influence
+const R_WAKE = 120;
+const WAKE_TTL_MS = 700;
+const WAKE_SAMPLE_MIN_DIST = 8;
+const WAKE_MAX_SAMPLES = 14;
+const BASE_RGB = [58, 58, 58];
+const GLOW_RGB = [134, 239, 172];
+const BASE_ALPHA = 0.55;
+const GLOW_ALPHA = 1.0;             // saturate to full mint at center
+
+/* Magnet displacement — dots get pulled toward the cursor and ease back.
+   Critically damped spring: target_disp scales with proximity, current disp
+   lerps toward target each frame. Kept light: just two scalars per dot. */
+const PULL_MAX_PX = 14;             // farther travel before easing back
+const PULL_LERP = 0.18;             // spring stiffness — higher = snappier
+const PULL_RETURN_LERP = 0.07;      // softer easing back to rest, so dots linger displaced
+
+const HeroDotField = () => {
+  const wrapperRef = useRefPr(null);
+  const canvasRef = useRefPr(null);
+  const mouseRef = useRefPr({ x: 0, y: 0, active: false });
+  const wakeRef = useRefPr([]);
+  const sizeRef = useRefPr({ w: 0, h: 0, dpr: 1 });
+
+  useEffectPr(() => {
+    const wrapper = wrapperRef.current;
+    const canvas = canvasRef.current;
+    if (!wrapper || !canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const noHover = window.matchMedia('(hover: none)').matches;
+    const staticOnly = reduced || noHover;
+
+    let cols = 0, rows = 0;
+    let dx = new Float32Array(0);
+    let dy = new Float32Array(0);
+
+    const resize = () => {
+      const rect = wrapper.getBoundingClientRect();
+      const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      sizeRef.current = { w: rect.width, h: rect.height, dpr };
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cols = Math.floor(rect.width / DOT_SPACING);
+      rows = Math.floor(rect.height / DOT_SPACING);
+      dx = new Float32Array(cols * rows);
+      dy = new Float32Array(cols * rows);
+    };
+    resize();
+
+    const drawDots = (mouse, wake) => {
+      const { w, h } = sizeRef.current;
+      ctx.clearRect(0, 0, w, h);
+      const baseColor = `rgba(${BASE_RGB[0]}, ${BASE_RGB[1]}, ${BASE_RGB[2]}, ${BASE_ALPHA})`;
+      const cursorActive = mouse.active;
+      for (let row = 0; row < rows; row++) {
+        const gy = DOT_SPACING / 2 + row * DOT_SPACING;
+        for (let col = 0; col < cols; col++) {
+          const gx = DOT_SPACING / 2 + col * DOT_SPACING;
+          const idx = row * cols + col;
+
+          // ---- intensity: cursor halo + wake samples ----
+          let intensity = 0;
+          let pullTx = 0, pullTy = 0;
+          if (cursorActive) {
+            const ex = gx - mouse.x;
+            const ey = gy - mouse.y;
+            const d = Math.hypot(ex, ey);
+            if (d < R_HALO) {
+              const t = 1 - d / R_HALO;
+              intensity = t * t;
+              // pull target: toward cursor, scaled by proximity-cubed
+              // (so far dots barely move, close dots get yanked)
+              const pull = t * t * t * PULL_MAX_PX;
+              if (d > 0.01) {
+                pullTx = -ex / d * pull;
+                pullTy = -ey / d * pull;
+              }
+            }
+          }
+          for (let i = 0; i < wake.length; i++) {
+            const s = wake[i];
+            if (s.weight <= 0) continue;
+            const ex = gx - s.x;
+            const ey = gy - s.y;
+            const d = Math.hypot(ex, ey);
+            if (d < R_WAKE) {
+              const t = 1 - d / R_WAKE;
+              const v = t * t * s.weight;
+              if (v > intensity) intensity = v;
+              // wake samples also pull, weighted by sample weight, so the trail
+              // of dots stays slightly displaced as the cursor moves on
+              const pull = t * t * t * s.weight * PULL_MAX_PX * 0.7;
+              if (d > 0.01) {
+                const wx = -ex / d * pull;
+                const wy = -ey / d * pull;
+                if (Math.hypot(wx, wy) > Math.hypot(pullTx, pullTy)) {
+                  pullTx = wx;
+                  pullTy = wy;
+                }
+              }
+            }
+          }
+
+          // ---- displacement update (spring toward target, ease back to 0) ----
+          const k = pullTx === 0 && pullTy === 0 ? PULL_RETURN_LERP : PULL_LERP;
+          dx[idx] += (pullTx - dx[idx]) * k;
+          dy[idx] += (pullTy - dy[idx]) * k;
+          const drawX = gx + dx[idx];
+          const drawY = gy + dy[idx];
+
+          // ---- color + radius lerp ----
+          if (intensity <= 0.01) {
+            ctx.fillStyle = baseColor;
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, DOT_BASE_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            continue;
+          }
+          const kk = Math.min(1, intensity);
+          const r = Math.round(BASE_RGB[0] + (GLOW_RGB[0] - BASE_RGB[0]) * kk);
+          const g = Math.round(BASE_RGB[1] + (GLOW_RGB[1] - BASE_RGB[1]) * kk);
+          const b = Math.round(BASE_RGB[2] + (GLOW_RGB[2] - BASE_RGB[2]) * kk);
+          const a = BASE_ALPHA + (GLOW_ALPHA - BASE_ALPHA) * kk;
+          const radius = DOT_BASE_RADIUS + (DOT_GLOW_RADIUS - DOT_BASE_RADIUS) * kk;
+          // soft outer halo behind active dots — adds glow without bloating the core
+          if (kk > HALO_GATE) {
+            const haloA = (kk - HALO_GATE) * HALO_ALPHA_GAIN;
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${haloA})`;
+            ctx.beginPath();
+            ctx.arc(drawX, drawY, DOT_HALO_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
+          ctx.beginPath();
+          ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    };
+
+    if (staticOnly) {
+      drawDots({ active: false, x: 0, y: 0 }, []);
+      const onResize = () => { resize(); drawDots({ active: false, x: 0, y: 0 }, []); };
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }
+
+    let raf = 0;
+    let running = false;
+    let lastWakeX = -1e9;
+    let lastWakeY = -1e9;
+
+    const onPointerMove = (e) => {
+      const rect = wrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      mouseRef.current = { x, y, active: true };
+      const dx = x - lastWakeX;
+      const dy = y - lastWakeY;
+      if (Math.hypot(dx, dy) >= WAKE_SAMPLE_MIN_DIST) {
+        lastWakeX = x;
+        lastWakeY = y;
+        wakeRef.current.push({ x, y, t: performance.now(), weight: 1 });
+        if (wakeRef.current.length > WAKE_MAX_SAMPLES) {
+          wakeRef.current.splice(0, wakeRef.current.length - WAKE_MAX_SAMPLES);
+        }
+      }
+    };
+    const onPointerLeave = () => {
+      mouseRef.current = { ...mouseRef.current, active: false };
+    };
+
+    const tick = () => {
+      const now = performance.now();
+      const wake = wakeRef.current;
+      for (let i = wake.length - 1; i >= 0; i--) {
+        const age = now - wake[i].t;
+        if (age >= WAKE_TTL_MS) { wake.splice(i, 1); continue; }
+        wake[i].weight = 1 - age / WAKE_TTL_MS;
+      }
+      drawDots(mouseRef.current, wake);
+      raf = requestAnimationFrame(tick);
+    };
+
+    const start = () => {
+      if (running) return;
+      running = true;
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      if (!running) return;
+      running = false;
+      cancelAnimationFrame(raf);
+      // one last static frame so the field doesn't freeze mid-halo
+      drawDots({ active: false, x: 0, y: 0 }, []);
+    };
+
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) start(); else stop();
+      }
+    }, { threshold: 0 });
+    io.observe(wrapper);
+
+    const onResize = () => { resize(); };
+    window.addEventListener('resize', onResize);
+    // Listen on the parent section, not the wrapper: the wrapper has
+    // pointer-events: none (so clicks pass through to the hero content),
+    // which means pointer events never fire on it.
+    const host = wrapper.parentElement || wrapper;
+    host.addEventListener('pointermove', onPointerMove);
+    host.addEventListener('pointerleave', onPointerLeave);
+
+    start();
+
+    return () => {
+      io.disconnect();
+      window.removeEventListener('resize', onResize);
+      host.removeEventListener('pointermove', onPointerMove);
+      host.removeEventListener('pointerleave', onPointerLeave);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="uf-hero__dots" aria-hidden="true">
+      <canvas ref={canvasRef} />
+    </div>
+  );
+};
+
 /* ----------------------------- Hero ----------------------------- */
 
 const Hero = ({ onBook }) => {
   return (
     <section className="uf-section uf-section--hero uf-hero" id="top">
-      <div className="uf-dotgrid uf-dotgrid--steel" />
+      <HeroDotField />
       <div className="uf-container uf-hero__inner">
         <div>
           <Eyebrow dot pulse>OPERATOR&apos;S ALLY · HOME SERVICES</Eyebrow>
@@ -166,4 +410,4 @@ const Hero = ({ onBook }) => {
   );
 };
 
-Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero, EventFeed });
+Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero, HeroDotField, EventFeed });
