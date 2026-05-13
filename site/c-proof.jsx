@@ -102,7 +102,7 @@ function ClosingSection({ onBook }) {
           Then we either build, or we don&apos;t.
         </p>
         <div className="uf-closing__cta">
-          <Btn variant="primary" size="lg" arrow="↗" onClick={onBook}>Book a call</Btn>
+          <Btn variant="primary" size="lg" arrow onClick={onBook}>Book a call</Btn>
           <Btn variant="secondary" size="lg" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Back to top</Btn>
         </div>
         <div className="uf-closing__meta">
