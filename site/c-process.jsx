@@ -44,11 +44,11 @@ function ProcessSection() {
     <section className="uf-section" id="process">
       <div className="uf-container" style={{ position: 'relative' }}>
         <div className="uf-sech">
-          <Eyebrow data-reveal style={{ ['--reveal-delay']: '0ms' }}>HOW IT GOES</Eyebrow>
+          <Eyebrow data-reveal style={{ ['--reveal-delay']: '0ms' }}>OUR PROCESS</Eyebrow>
           <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
             {splitWords(<>From first call <span className="mint">to running systems.</span></>)}
           </h2>
-          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Auto-advances through each stage. Click any node to jump back — it picks up again after a few seconds.</p>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Auto-advances through each stage. Click any node to jump back.</p>
         </div>
 
         <div className="uf-timeline" data-reveal style={{ ['--reveal-delay']: '320ms' }}>

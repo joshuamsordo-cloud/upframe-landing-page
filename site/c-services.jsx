@@ -29,89 +29,71 @@ function MiniSite() {
 }
 
 /* ============================ Workflow Graph ==========================
-   N8N-inspired sequential workflow. Rounded-rect nodes connected by
-   bezier curves. Each "step" lights up a node and animates a mint
-   gradient sweep along the outgoing edge before the next node activates.
+   Vertical branching workflow. Single input forks into two parallel
+   branches (SMS + Log CRM) that both converge on one outcome (Booked).
    ===================================================================== */
 
-// Each node: id, x/y in viewBox 100x70 coords, label, sub
+// x/y in viewBox 60×90 coords
 const FLOW_NODES = [
-  { id: 'webhook', x: 10, y: 35, lbl: 'Webhook',  sub: 'quote sent' },
-  { id: 'wait',    x: 30, y: 35, lbl: 'Wait 5m',  sub: 'delay' },
-  { id: 'sms',     x: 50, y: 35, lbl: 'Send SMS', sub: 'twilio' },
-  { id: 'branch',  x: 70, y: 35, lbl: 'Replied?', sub: 'branch' },
-  { id: 'crm',     x: 90, y: 18, lbl: 'Update CRM', sub: 'booked' },
-  { id: 'retry',   x: 90, y: 52, lbl: 'Re-send',    sub: 'day 2' },
+  { id: 'lead',   x: 30, y:  8, lbl: 'Lead In',  sub: 'inbound' },
+  { id: 'qual',   x: 30, y: 30, lbl: 'Qualify',  sub: '9s'      },
+  { id: 'sms',    x: 12, y: 55, lbl: 'SMS',      sub: 'twilio'  },
+  { id: 'crm',    x: 48, y: 55, lbl: 'Log CRM',  sub: 'hubspot' },
+  { id: 'booked', x: 30, y: 78, lbl: 'Booked',   sub: '+$520'   },
 ];
 
-// Edge list — last two are the branch outputs (yes -> crm, no -> retry)
 const FLOW_EDGES = [
   { from: 0, to: 1 },
   { from: 1, to: 2 },
-  { from: 2, to: 3 },
-  { from: 3, to: 4 }, // yes branch
-  { from: 3, to: 5 }, // no  branch
+  { from: 1, to: 3 },
+  { from: 2, to: 4 },
+  { from: 3, to: 4 },
 ];
 
-// Sequence of node-indices to highlight per cycle. Branch alternates.
-const FLOW_LINEAR = [0, 1, 2, 3];
+// Each element is the set of node indices to activate simultaneously
+const FLOW_SEQ = [
+  [0],    // lead
+  [1],    // qualify
+  [2, 3], // sms + crm branch (parallel)
+  [4],    // booked
+];
+
 const STEP_MS = 900;
 
 function NodeGraph() {
   const [step, setStep] = useStateSvc(0);
-  const [branchYes, setBranchYes] = useStateSvc(true);
 
   useEffectSvc(() => {
     const id = setInterval(() => {
-      setStep(s => {
-        const total = FLOW_LINEAR.length + 1; // +1 for branch leg
-        const next = s + 1;
-        if (next > total) {
-          setBranchYes(b => !b);
-          return 0;
-        }
-        return next;
-      });
+      setStep(s => s >= FLOW_SEQ.length ? 0 : s + 1);
     }, STEP_MS);
     return () => clearInterval(id);
   }, []);
 
-  // active node index (in FLOW_NODES) per step:
-  //   step 0 → none (idle)
-  //   step 1..LINEAR.length → FLOW_LINEAR[step-1]
-  //   step LINEAR.length+1 → branch leg (4 or 5)
-  let activeIdx = -1;
-  if (step >= 1 && step <= FLOW_LINEAR.length) {
-    activeIdx = FLOW_LINEAR[step - 1];
-  } else if (step === FLOW_LINEAR.length + 1) {
-    activeIdx = branchYes ? 4 : 5;
-  }
-  const completedIdxSet = new Set();
+  const activeSet = new Set(step >= 1 && step <= FLOW_SEQ.length ? FLOW_SEQ[step - 1] : []);
+  const visitedSet = new Set();
   for (let s = 1; s <= step; s++) {
-    if (s <= FLOW_LINEAR.length) completedIdxSet.add(FLOW_LINEAR[s - 1]);
-    else completedIdxSet.add(branchYes ? 4 : 5);
+    if (s <= FLOW_SEQ.length) FLOW_SEQ[s - 1].forEach(i => visitedSet.add(i));
   }
-  const activeEdgeKey = (() => {
-    if (activeIdx < 0) return null;
-    return activeIdx; // 'to' of the edge that just animated
-  })();
 
-  // helper — bezier path between two nodes
   const NODE_W = 16, NODE_H = 10;
+  // Vertical bezier: bottom-center of `a` → top-center of `b`
   const path = (a, b) => {
-    const x1 = a.x + NODE_W / 2;
-    const y1 = a.y;
-    const x2 = b.x - NODE_W / 2;
-    const y2 = b.y;
-    const dx = (x2 - x1) * 0.5;
-    return `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+    const x1 = a.x, y1 = a.y + NODE_H / 2;
+    const x2 = b.x, y2 = b.y - NODE_H / 2;
+    const dy = (y2 - y1) * 0.5;
+    return `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
   };
+
+  const activeLabel = step === 0
+    ? 'Idle · awaiting lead'
+    : FLOW_SEQ[step - 1] ? FLOW_SEQ[step - 1].map(i => FLOW_NODES[i].lbl).join(' + ') : 'Cycle complete';
 
   return (
     <div className="uf-flow">
-      <svg viewBox="0 0 100 70" preserveAspectRatio="xMidYMid meet" className="uf-flow__svg">
+      <svg viewBox="0 0 60 90" preserveAspectRatio="xMidYMid meet" className="uf-flow__svg">
         <defs>
-          <linearGradient id="uf-flow-grad" x1="0" x2="1" y1="0" y2="0">
+          <linearGradient id="uf-flow-grad" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%"   stopColor="rgba(134,239,172,0)" />
             <stop offset="50%"  stopColor="rgba(134,239,172,0.95)" />
             <stop offset="100%" stopColor="rgba(134,239,172,0)" />
@@ -122,15 +104,11 @@ function NodeGraph() {
           </filter>
         </defs>
 
-        {/* edges — base */}
         {FLOW_EDGES.map((e, i) => {
           const a = FLOW_NODES[e.from], b = FLOW_NODES[e.to];
-          const isYesLeg = i === 3, isNoLeg = i === 4;
-          const branchHidden = (isYesLeg && !branchYes && step > FLOW_LINEAR.length) ||
-                               (isNoLeg && branchYes && step > FLOW_LINEAR.length);
-          const isActiveEdge = activeEdgeKey === e.to && step > 0;
+          const isActiveEdge = activeSet.has(e.to) && step > 0;
           return (
-            <g key={i} className={"uf-flow__edge" + (branchHidden ? ' uf-flow__edge--dim' : '')}>
+            <g key={i} className="uf-flow__edge">
               <path d={path(a, b)} stroke="var(--steel-2)" strokeWidth="0.4" fill="none" />
               {isActiveEdge && (
                 <path d={path(a, b)} stroke="url(#uf-flow-grad)" strokeWidth="0.9" fill="none"
@@ -140,36 +118,28 @@ function NodeGraph() {
           );
         })}
 
-        {/* nodes */}
         {FLOW_NODES.map((n, i) => {
-          const isActive = i === activeIdx;
-          const isDone = completedIdxSet.has(i) && !isActive;
-          const isStart = i === 0;
+          const isActive = activeSet.has(i);
+          const isDone = visitedSet.has(i) && !isActive;
           return (
             <g key={n.id}
                className={"uf-flow__node" +
                  (isActive ? ' is-active' : '') +
-                 (isDone   ? ' is-done'   : '') +
-                 (isStart  ? ' is-start'  : '')}
+                 (isDone   ? ' is-done'   : '')}
                style={{ transform: `translate(${n.x}px, ${n.y}px)` }}>
               <rect x={-NODE_W / 2} y={-NODE_H / 2} width={NODE_W} height={NODE_H} rx="1.6"
                     className="uf-flow__node-bg" />
               <text x="0" y="-0.5" textAnchor="middle" className="uf-flow__node-lbl">{n.lbl}</text>
               <text x="0" y="3.1" textAnchor="middle" className="uf-flow__node-sub">{n.sub}</text>
-              {/* tiny IO ports */}
-              <circle cx={-NODE_W / 2} cy="0" r="0.7" className="uf-flow__node-port" />
-              <circle cx={NODE_W / 2}  cy="0" r="0.7" className="uf-flow__node-port" />
+              <circle cx="0" cy={-NODE_H / 2} r="0.7" className="uf-flow__node-port" />
+              <circle cx="0" cy={NODE_H / 2}  r="0.7" className="uf-flow__node-port" />
             </g>
           );
         })}
       </svg>
       <div className="uf-flow__caption">
         <span className="uf-flow__dot" />
-        <span>{step === 0 ? 'Waiting · webhook' : (
-          activeIdx === 4 ? 'Replied → booked' :
-          activeIdx === 5 ? 'No reply → re-send' :
-          FLOW_NODES[activeIdx] ? 'Running · ' + FLOW_NODES[activeIdx].lbl.toLowerCase() : 'Cycle complete'
-        )}</span>
+        <span>{activeLabel}</span>
       </div>
     </div>
   );
@@ -286,7 +256,7 @@ function ServicesSection() {
           <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
             {splitWords(<>Three pieces of <span className="mint">infrastructure.</span></>)}
           </h2>
-          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>No fixed tiers. We start where the leak is biggest — usually the phone — and build out from there.</p>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>No fixed tiers. We start where the leak is biggest and build out from there.</p>
         </div>
         <div className="uf-services">
           {services.map((s, i) => (

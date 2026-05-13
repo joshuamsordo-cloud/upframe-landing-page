@@ -266,7 +266,7 @@ function LeakPipes() {
             const x = xFor(s.f);
             const active = i === topPos.stageIdx;
             const isPulse = active && topPos.atStage;
-            const isActive = i < topPos.stageIdx || isPulse;
+            const isActive = i <= topPos.stageIdx;
             return (
               <g key={'st-top-' + i}>
                 {isPulse && (
@@ -289,7 +289,7 @@ function LeakPipes() {
             const x = xFor(s.f);
             const active = i === botPos.stageIdx;
             const isPulse = active && botPos.atStage;
-            const isActive = i < botPos.stageIdx || isPulse;
+            const isActive = i <= botPos.stageIdx;
             return (
               <g key={'st-bot-' + i}>
                 {isPulse && (

@@ -79,6 +79,23 @@ Two tools are available for GitHub work — use the right one for the job:
 2. Create a GitHub issue describing the work using the MCP server. Note the issue number.
 3. Reference that issue number in all commits and the eventual PR.
 
+**After every visual change (UI, CSS, layout):**
+Use Playwright MCP to verify the result in the browser before treating the task as done. Always check:
+- The changed element looks correct (no clipping, overflow, or alignment issues)
+- Adjacent/related elements haven't regressed
+
+```
+mcp__playwright__browser_navigate  → http://localhost:3000
+mcp__playwright__browser_take_screenshot  → full page or targeted element
+```
+
+Scroll to the affected section with `mcp__playwright__browser_evaluate` if needed:
+```js
+() => { document.querySelector('#section-id').scrollIntoView(); }
+```
+
+For targeted element screenshots, use `target` + `element` params on `browser_take_screenshot`.
+
 **When the task is complete:**
 1. Run `npm run lint` — all errors must be zero before marking anything done. Fix before closing.
 2. Verify the implementation matches what the issue described.
