@@ -25,6 +25,8 @@ export default [
         clearTimeout: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
+        IntersectionObserver: "readonly",
+        PointerEvent: "readonly",
         // CDN globals — React declared per-file via /* global React */
         ReactDOM: "readonly",
         // Cross-file components (set on window via Object.assign, loaded in script-tag order)
