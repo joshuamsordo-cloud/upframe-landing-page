@@ -120,9 +120,9 @@ function Footer() {
     <footer className="uf-foot">
       <div className="uf-container uf-foot__inner">
         <div className="uf-foot__brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Mark size={24} />
-            <Wordmark />
+          <div className="uf-foot__logo">
+            <img src="assets/logo-mark-mint.png" alt="" className="uf-foot__logo-mark" draggable="false" />
+            <img src="assets/logo-text.png" alt="Upframe AI" className="uf-foot__logo-text" draggable="false" />
           </div>
           <div className="uf-foot__tag">Less drag. More momentum. Built for owner-operators in the trades.</div>
         </div>
