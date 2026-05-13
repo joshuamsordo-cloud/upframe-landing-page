@@ -6,4 +6,4 @@ node_modules/
 
 # Dev/test artifacts
 .playwright-mcp/
-/*.png
+.tmp/
