@@ -39,7 +39,7 @@ function TestiCard({ t, playing, onPlay }) {
           <span className="uf-testi__city">{t.city}</span>
         </div>
       </div>
-      <div className="uf-testi__quote">"{t.quote}"</div>
+      <div className="uf-testi__quote">&ldquo;{t.quote}&rdquo;</div>
       <div className="uf-testi__foot">
         <div className="uf-testi__stats">
           {t.stats.map(([n, l]) => (
@@ -52,16 +52,16 @@ function TestiCard({ t, playing, onPlay }) {
         {t.audio && (
           <button className={"uf-testi__play" + (playing ? ' playing' : '')} onClick={onPlay}>
             {playing ? (
-              <React.Fragment>
+              <>
                 <span className={"uf-testi__bars playing"}>
                   <span /><span /><span /><span /><span />
                 </span>
                 0:42
-              </React.Fragment>
+              </>
             ) : (
-              <React.Fragment>
+              <>
                 <span className="glyph">▶</span> Hear it · 0:42
-              </React.Fragment>
+              </>
             )}
           </button>
         )}
@@ -99,7 +99,7 @@ function ClosingSection({ onBook }) {
         <h2 className="uf-closing__h">Every week you wait,<br />the gap <span className="mint">compounds.</span></h2>
         <p className="uf-closing__sub">
           One conversation. We map the leaks and put a number on each.
-          Then we either build, or we don't.
+          Then we either build, or we don&apos;t.
         </p>
         <div className="uf-closing__cta">
           <Btn variant="primary" size="lg" arrow="↗" onClick={onBook}>Book a call</Btn>

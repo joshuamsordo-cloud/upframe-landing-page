@@ -1,5 +1,4 @@
 /* global React */
-const { useState, useEffect, useRef } = React;
 
 /* ----------------------------- Primitives ----------------------------- */
 
@@ -66,7 +65,7 @@ const Hero = ({ onBook }) => {
       <div className="uf-dotgrid uf-dotgrid--steel" />
       <div className="uf-container uf-hero__inner">
         <div>
-          <Eyebrow dot pulse>OPERATOR'S ALLY · HOME SERVICES</Eyebrow>
+          <Eyebrow dot pulse>OPERATOR&apos;S ALLY · HOME SERVICES</Eyebrow>
           <h1 className="uf-hero__h">Stop losing<br /><span className="mint">leads.</span></h1>
           <p className="uf-hero__sub">
             Websites, automations, and AI agents for home service businesses.

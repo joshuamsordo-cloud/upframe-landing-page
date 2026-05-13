@@ -1,5 +1,4 @@
 /* global React, Nav, Hero, TheLeakSection, ROISection, ServicesSection, ProcessSection, TestimonialsSection, ClosingSection, Footer, FloatingAgent */
-const { useState: useStateApp } = React;
 
 function App() {
   const onBook = () => {

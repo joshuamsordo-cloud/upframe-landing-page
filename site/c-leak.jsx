@@ -50,7 +50,6 @@ function QuoteRace() {
   const botLit = BOT_HITS.map(h => t >= h);
 
   // Counters at end of cycle
-  const cyclesShown = 142; // arbitrary realistic-looking count
   const minutes = Math.floor(t * 8); // displayed seconds within race
   const seconds = Math.floor((t * 8 - minutes) * 60);
   const timeText = `00:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;

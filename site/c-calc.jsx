@@ -19,9 +19,9 @@ function ROISection({ onBook }) {
     <section className="uf-section uf-section--inset" id="calc">
       <div className="uf-container">
         <div className="uf-sech">
-          <Eyebrow amber dot pulse>WHAT IT'S COSTING YOU</Eyebrow>
+          <Eyebrow amber dot pulse>WHAT IT&apos;S COSTING YOU</Eyebrow>
           <h2 className="uf-sech__h">Run the numbers <span className="amber">on your own week.</span></h2>
-          <p className="uf-sech__sub">Most owners under-count by 2–3×. Drag the sliders honestly — then we'll talk.</p>
+          <p className="uf-sech__sub">Most owners under-count by 2–3×. Drag the sliders honestly — then we&apos;ll talk.</p>
         </div>
         <div className="uf-calc">
           <div className="uf-calc__inputs">
@@ -60,7 +60,7 @@ function ROISection({ onBook }) {
               <div className="uf-calc__out-eyebrow"><span className="dot" />LEAKING PER MONTH</div>
               <div className="uf-calc__out-num">{fmt(total)}<span className="unit">/mo</span></div>
               <div className="uf-calc__out-desc">
-                Doesn't count slow quotes, un-asked reviews, or referrals lost to a brochure-grade site. The real number is usually higher.
+                Doesn&apos;t count slow quotes, un-asked reviews, or referrals lost to a brochure-grade site. The real number is usually higher.
               </div>
               <div className="uf-calc__out-breakdown">
                 <div className="uf-calc__bd-item">

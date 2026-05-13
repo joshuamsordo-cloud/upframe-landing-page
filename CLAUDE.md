@@ -52,6 +52,31 @@ Eyebrow labels (`.uf-eyebrow`) are always JetBrains Mono, all-caps, mint or ambe
 
 Space Grotesk (headings, weight 500–700), Inter (body), JetBrains Mono (eyebrows, mono labels) — all loaded via Google Fonts in `colors_and_type.css`.
 
+## Safety
+
+Never hardcode API keys, tokens, passwords, or any credentials in any file. All sensitive values belong in a `.env` file. The `.env` file must never be committed — confirm it is in `.gitignore` before touching any environment config.
+
+## Workflow
+
+GitHub is connected via the GitHub MCP server. Use MCP tools for all GitHub actions (creating issues, opening PRs, merging, commenting) — do not use the `gh` CLI or `git push` unless MCP is unavailable.
+
+**Before starting any major task:**
+1. Create a GitHub issue describing the work using the MCP server. Note the issue number.
+2. Reference that issue number in all commits and the eventual PR.
+
+**When the task is complete:**
+1. Run `npm run lint` — all errors must be zero before marking anything done. Fix before closing.
+2. Verify the implementation matches what the issue described.
+3. Close the issue via MCP (or link the closing PR so it auto-closes).
+
+**Lint commands:**
+```bash
+npm run lint        # check — must pass clean before done
+npm run lint:fix    # auto-fix safe issues (formatting, some style rules)
+```
+
+> `react/jsx-no-undef` is disabled. This codebase loads components as `window` globals via CDN script tags — all "undefined" JSX components are intentional. The standard `no-undef` rule (from `js.configs.recommended`) handles genuine undefined variable checks.
+
 ## Animations
 
 - `QuoteRace` (c-leak.jsx): `requestAnimationFrame` loop, 15s cycle, two lanes

@@ -12,6 +12,7 @@ const STEPS = [
 function ProcessSection() {
   const [day, setDay] = useStateTl(1);   // current chosen day along timeline
   const [auto, setAuto] = useStateTl(true);
+  const [isDragging, setIsDragging] = useStateTl(false);
   const trackRef = useRefTl(null);
   const draggingRef = useRefTl(false);
   const interactedRef = useRefTl(false);
@@ -40,13 +41,14 @@ function ProcessSection() {
 
   const onPointerDown = (e) => {
     draggingRef.current = true;
+    setIsDragging(true);
     interactedRef.current = true;
     setAuto(false);
     handlePointer(e);
     e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId);
   };
   const onPointerMove = (e) => { if (draggingRef.current) handlePointer(e); };
-  const onPointerUp = () => { draggingRef.current = false; };
+  const onPointerUp = () => { draggingRef.current = false; setIsDragging(false); };
 
   const handlePointer = (e) => {
     if (!trackRef.current) return;
@@ -99,7 +101,7 @@ function ProcessSection() {
               const reached = s.day <= day + 0.5;
               const active = i === currentIdx;
               return (
-                <React.Fragment key={s.day}>
+                <React.Fragment key={s.day}>  {/* key prop requires React.Fragment, not shorthand */}
                   <div
                     className={"uf-timeline__node " + (reached ? 'reached ' : '') + (active ? 'active' : '')}
                     style={{ left: pct + '%' }}
@@ -114,7 +116,7 @@ function ProcessSection() {
               );
             })}
 
-            <div className={"uf-timeline__handle" + (draggingRef.current ? ' dragging' : '')}
+            <div className={"uf-timeline__handle" + (isDragging ? ' dragging' : '')}
                  style={{ left: fillPct + '%' }} />
           </div>
 

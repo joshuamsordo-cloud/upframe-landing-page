@@ -11,7 +11,7 @@ function MiniSite() {
       </div>
       <div className="uf-mini-site">
         <div className="uf-mini-site__hero">
-          <div className="h">Drain emergency? <span className="mint">We're 22 min away.</span></div>
+          <div className="h">Drain emergency? <span className="mint">We&apos;re 22 min away.</span></div>
           <div className="sub">Portland, OR · Licensed & bonded · 412 reviews</div>
           <div className="row">
             <span className="uf-mini-site__btn">Book now</span>
@@ -19,9 +19,9 @@ function MiniSite() {
           </div>
         </div>
         <div className="uf-mini-site__cards">
-          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>"Got someone out within an hour."</span><span className="meta">— Sarah K · Aug</span></div>
-          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>"Fair price, no upsell."</span><span className="meta">— Dave R · Aug</span></div>
-          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>"Booked online at 11pm. Done by 8am."</span><span className="meta">— Mira T · Jul</span></div>
+          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>&ldquo;Got someone out within an hour.&rdquo;</span><span className="meta">— Sarah K · Aug</span></div>
+          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>&ldquo;Fair price, no upsell.&rdquo;</span><span className="meta">— Dave R · Aug</span></div>
+          <div className="uf-mini-site__card"><span className="star">★ ★ ★ ★ ★</span><span>&ldquo;Booked online at 11pm. Done by 8am.&rdquo;</span><span className="meta">— Mira T · Jul</span></div>
         </div>
       </div>
     </div>
