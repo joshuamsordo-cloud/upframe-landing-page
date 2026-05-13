@@ -341,7 +341,11 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
 }
 .uf-pipes__counter--lost   .val { color: var(--amber); }
 .uf-pipes__counter--booked .val { color: var(--mint); }
-.uf-pipes__counter--booked     { background: rgba(134,239,172,0.04); border-color: rgba(134,239,172,0.25); }
+.uf-pipes__counter--booked { background: rgba(134,239,172,0.04); border-color: rgba(134,239,172,0.25); }
+.uf-pipes__counter--lost   { background: rgba(245,165,36,0.04); border-color: rgba(245,165,36,0.30); }
+.uf-pipes__counter .lbl    { font-size: 9px; }
+.uf-pipes__counter .val    { font-size: 24px; }
+@media (prefers-reduced-motion: reduce) { .uf-pipe__finalPulse { display: none; } }
 
 .uf-pipes__close {
   margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--steel);
