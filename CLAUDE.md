@@ -56,6 +56,17 @@ Space Grotesk (headings, weight 500–700), Inter (body), JetBrains Mono (eyebro
 
 Never hardcode API keys, tokens, passwords, or any credentials in any file. All sensitive values belong in a `.env` file. The `.env` file must never be committed — confirm it is in `.gitignore` before touching any environment config.
 
+## Project structure
+
+| Path | Contents |
+|---|---|
+| `plans/` | Implementation plans — one markdown file per major feature |
+| `assets/` | Logos (`logo-mark-mint.png`, `logo-mark-white.png`, `logo-text.png`) and design tokens (`colors_and_type.css`) |
+| `site/` | All JSX components and CSS (`site.css`, `base.css`) |
+| `index.html` | Entry point — loads CDN scripts and wires component files in order |
+| `.env` | Local environment variables (never committed) |
+| `.env.example` | Environment variable template (committed, no real values) |
+
 ## Workflow
 
 Two tools are available for GitHub work — use the right one for the job:
@@ -64,8 +75,9 @@ Two tools are available for GitHub work — use the right one for the job:
 - **GitHub MCP server** (`mcp__plugin_github_github__*`) — use for GitHub API actions: creating issues, opening PRs, merging, commenting, reviewing, and reading GitHub data.
 
 **Before starting any major task:**
-1. Create a GitHub issue describing the work using the MCP server. Note the issue number.
-2. Reference that issue number in all commits and the eventual PR.
+1. Write a plan as a markdown file in `plans/` (e.g. `plans/feature-name.md`). Cover goal, approach, file changes, and open questions.
+2. Create a GitHub issue describing the work using the MCP server. Note the issue number.
+3. Reference that issue number in all commits and the eventual PR.
 
 **When the task is complete:**
 1. Run `npm run lint` — all errors must be zero before marking anything done. Fix before closing.
