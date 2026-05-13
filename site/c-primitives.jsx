@@ -11,11 +11,74 @@ const Wordmark = () => (
   <span className="uf-nav__wm"><span className="up">up</span><span className="fr">frame</span></span>
 );
 
-const Eyebrow = ({ children, amber, dot, pulse }) => (
-  <span className={"uf-eyebrow" + (amber ? " uf-eyebrow--amber" : "")}>
+const Eyebrow = ({ children, amber, dot, pulse, ...rest }) => (
+  <span {...rest} className={"uf-eyebrow" + (amber ? " uf-eyebrow--amber" : "")}>
     {dot && <span className={"uf-eyebrow__dot" + (pulse ? " pulse" : "")} />}{children}
   </span>
 );
+
+/* splitWords — wrap each whitespace-separated word of `children` in a
+   <span class="uf-word" style={{ '--word-i': i }}>. Inline elements
+   (color spans like `<span class="mint">`, line breaks) pass through
+   intact; color spans count as a single word so the cascade indexes them. */
+const splitWords = (children) => {
+  // Unwrap fragments — React.Children iterates the fragment as a single
+  // element otherwise, which silently swallows the per-word logic.
+  if (React.isValidElement(children) && children.type === React.Fragment) {
+    children = children.props.children;
+  }
+  let i = 0;
+  const out = [];
+  React.Children.forEach(children, (child, idx) => {
+    if (typeof child === 'string') {
+      const parts = child.split(/(\s+)/);
+      for (const p of parts) {
+        if (p.length === 0) continue;
+        if (/^\s+$/.test(p)) { out.push(p); continue; }
+        out.push(
+          <span key={`w${idx}-${i}`} className="uf-word" style={{ ['--word-i']: i }}>{p}</span>
+        );
+        i++;
+      }
+    } else if (React.isValidElement(child)) {
+      if (child.type === 'br') {
+        out.push(React.cloneElement(child, { key: `br${idx}` }));
+      } else {
+        const existingCls = child.props.className || '';
+        const existingStyle = child.props.style || {};
+        out.push(React.cloneElement(child, {
+          key: `el${idx}-${i}`,
+          className: (existingCls + ' uf-word').trim(),
+          style: { ...existingStyle, ['--word-i']: i },
+        }));
+        i++;
+      }
+    } else if (child != null && child !== false) {
+      out.push(child);
+    }
+  });
+  return out;
+};
+
+/* RevealController — single page-wide IntersectionObserver. Adds
+   `.uf-revealed` to every `[data-reveal]` the first time it crosses the
+   viewport (with a 10% bottom margin so reveals trigger just before the
+   element enters fully). One-shot per element. */
+const RevealController = () => {
+  useEffectPr(() => {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          e.target.classList.add('uf-revealed');
+          io.unobserve(e.target);
+        }
+      }
+    }, { rootMargin: '0px 0px -10% 0px', threshold: 0 });
+    document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+  return null;
+};
 
 const ArrowIcon = () => (
   <svg className="uf-arrow__svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -162,6 +225,16 @@ const PULL_MAX_PX = 14;             // farther travel before easing back
 const PULL_LERP = 0.18;             // spring stiffness — higher = snappier
 const PULL_RETURN_LERP = 0.07;      // softer easing back to rest, so dots linger displaced
 
+/* First-load mint pulse — one-time radial wave through the field. Blooms
+   from the lower-left where the .uf-hero radial mint glow sits, peaks
+   mid-cycle, fades out at the end. After PULSE_DURATION_MS the term is
+   dropped and the field returns to normal cursor/wake-driven behavior. */
+const PULSE_DURATION_MS = 1100;
+const PULSE_ORIGIN_X = 0.15;        // fraction of canvas width
+const PULSE_ORIGIN_Y = 0.85;
+const PULSE_SIGMA = 90;             // Gaussian band width (px)
+const PULSE_GAIN = 0.95;            // max intensity contribution from the wave
+
 const HeroDotField = () => {
   const wrapperRef = useRefPr(null);
   const canvasRef = useRefPr(null);
@@ -199,11 +272,14 @@ const HeroDotField = () => {
     };
     resize();
 
-    const drawDots = (mouse, wake) => {
+    const drawDots = (mouse, wake, pulse) => {
       const { w, h } = sizeRef.current;
       ctx.clearRect(0, 0, w, h);
       const baseColor = `rgba(${BASE_RGB[0]}, ${BASE_RGB[1]}, ${BASE_RGB[2]}, ${BASE_ALPHA})`;
       const cursorActive = mouse.active;
+      const pulseActive = !!pulse;
+      const pulseEnv = pulseActive ? Math.sin(Math.PI * pulse.t01) * PULSE_GAIN : 0;
+      const pulse2sigmaSq = 2 * PULSE_SIGMA * PULSE_SIGMA;
       for (let row = 0; row < rows; row++) {
         const gy = DOT_SPACING / 2 + row * DOT_SPACING;
         for (let col = 0; col < cols; col++) {
@@ -251,6 +327,16 @@ const HeroDotField = () => {
                 }
               }
             }
+          }
+
+          // ---- first-load mint pulse: Gaussian band at expanding radius ----
+          if (pulseActive) {
+            const ex = gx - pulse.originX;
+            const ey = gy - pulse.originY;
+            const d = Math.hypot(ex, ey);
+            const dist = d - pulse.radius;
+            const b = Math.exp(-(dist * dist) / pulse2sigmaSq) * pulseEnv;
+            if (b > intensity) intensity = b;
           }
 
           // ---- displacement update (spring toward target, ease back to 0) ----
@@ -322,6 +408,8 @@ const HeroDotField = () => {
       mouseRef.current = { ...mouseRef.current, active: false };
     };
 
+    const pulseStart = performance.now();
+
     const tick = () => {
       const now = performance.now();
       const wake = wakeRef.current;
@@ -330,7 +418,20 @@ const HeroDotField = () => {
         if (age >= WAKE_TTL_MS) { wake.splice(i, 1); continue; }
         wake[i].weight = 1 - age / WAKE_TTL_MS;
       }
-      drawDots(mouseRef.current, wake);
+      const pulseT = (now - pulseStart) / PULSE_DURATION_MS;
+      let pulse = null;
+      if (pulseT < 1) {
+        const { w, h } = sizeRef.current;
+        const maxDist = Math.hypot(w, h);
+        const eased = 1 - (1 - pulseT) * (1 - pulseT);  // ease-out quad
+        pulse = {
+          t01: pulseT,
+          originX: PULSE_ORIGIN_X * w,
+          originY: PULSE_ORIGIN_Y * h,
+          radius: eased * maxDist,
+        };
+      }
+      drawDots(mouseRef.current, wake, pulse);
       raf = requestAnimationFrame(tick);
     };
 
@@ -389,13 +490,15 @@ const Hero = ({ onBook }) => {
       <HeroDotField />
       <div className="uf-container uf-hero__inner">
         <div>
-          <Eyebrow dot pulse>OPERATOR&apos;S ALLY · HOME SERVICES</Eyebrow>
-          <h1 className="uf-hero__h">Stop losing<br /><span className="mint">leads.</span></h1>
-          <p className="uf-hero__sub">
+          <Eyebrow dot pulse data-reveal style={{ ['--reveal-delay']: '0ms' }}>OPERATOR&apos;S ALLY · HOME SERVICES</Eyebrow>
+          <h1 className="uf-hero__h" data-reveal style={{ ['--reveal-delay']: '220ms', ['--word-base']: '220ms' }}>
+            {splitWords(<>Stop losing<br /><span className="mint">leads.</span></>)}
+          </h1>
+          <p className="uf-hero__sub" data-reveal style={{ ['--reveal-delay']: '640ms' }}>
             Websites, automations, and AI agents for home service businesses.
             Less drag. More momentum.
           </p>
-          <div className="uf-hero__cta">
+          <div className="uf-hero__cta" data-reveal style={{ ['--reveal-delay']: '820ms' }}>
             <Btn variant="primary" size="lg" arrow onClick={onBook}>Book a call</Btn>
             <Btn variant="secondary" size="lg" onClick={() => {
               const el = document.getElementById('leak');
@@ -404,10 +507,12 @@ const Hero = ({ onBook }) => {
             <span className="uf-hero__hint">30 min · no card · no pitch</span>
           </div>
         </div>
-        <EventFeed />
+        <div data-reveal style={{ ['--reveal-delay']: '1000ms' }}>
+          <EventFeed />
+        </div>
       </div>
     </section>
   );
 };
 
-Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero, HeroDotField, EventFeed });
+Object.assign(window, { Mark, Wordmark, Eyebrow, Btn, Nav, Hero, HeroDotField, EventFeed, RevealController, splitWords });

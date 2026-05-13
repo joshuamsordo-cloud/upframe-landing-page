@@ -282,13 +282,15 @@ function ServicesSection() {
     <section className="uf-section" id="services">
       <div className="uf-container">
         <div className="uf-sech">
-          <Eyebrow>OUR SERVICES</Eyebrow>
-          <h2 className="uf-sech__h">Three pieces of <span className="mint">infrastructure.</span></h2>
-          <p className="uf-sech__sub">No fixed tiers. We start where the leak is biggest — usually the phone — and build out from there.</p>
+          <Eyebrow data-reveal style={{ ['--reveal-delay']: '0ms' }}>OUR SERVICES</Eyebrow>
+          <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+            {splitWords(<>Three pieces of <span className="mint">infrastructure.</span></>)}
+          </h2>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>No fixed tiers. We start where the leak is biggest — usually the phone — and build out from there.</p>
         </div>
         <div className="uf-services">
-          {services.map(s => (
-            <div className="uf-service" key={s.n}>
+          {services.map((s, i) => (
+            <div className="uf-service" key={s.n} data-reveal style={{ ['--reveal-delay']: `${360 + i * 100}ms` }}>
               <div className="uf-service__num">{s.n}</div>
               <div className="uf-service__h">{s.h}</div>
               <div className="uf-service__desc">{s.desc}</div>

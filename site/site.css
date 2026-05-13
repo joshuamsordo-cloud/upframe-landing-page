@@ -17,6 +17,49 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   background-image: radial-gradient(rgba(58,58,58,0.55) 1px, transparent 1.4px);
 }
 
+/* ============ Scroll-reveal motion ============
+   Block-level: any [data-reveal] starts hidden + nudged down 14px and
+   transitions to its natural state when .uf-revealed is added by the
+   page-wide RevealController (single IntersectionObserver in c-primitives).
+   Stagger via inline `style="--reveal-delay: ${n}ms"`.
+
+   Word-level: headings with the splitWords helper get each word in a
+   .uf-word span. The whole word cascade animates once the parent gains
+   .uf-revealed; per-word delay is `--word-base + --word-i * 60ms`. */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+[data-reveal].uf-revealed {
+  opacity: 1;
+  transform: none;
+}
+.uf-word {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(0.42em);
+  transition: opacity 520ms var(--ease-out), transform 520ms var(--ease-out);
+  transition-delay: calc(var(--word-base, 0ms) + var(--word-i, 0) * 60ms);
+  will-change: opacity, transform;
+}
+.uf-revealed .uf-word { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal], .uf-word {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .uf-hero__h .mint {
+    animation: none !important;
+    background: none !important;
+    -webkit-text-fill-color: var(--mint) !important;
+  }
+}
+
 /* Interactive hero dot field — canvas overlay that replaces the static
    .uf-dotgrid--steel inside the hero. Listeners attach to the parent .uf-hero
    so we can keep pointer-events: none here and let clicks through. */
@@ -31,7 +74,7 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
 .uf-page { min-height: 100vh; display: flex; flex-direction: column; }
 .uf-container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 .uf-section { padding: 112px 0; border-top: 1px solid var(--steel); position: relative; }
-.uf-section--hero { padding: 144px 0 96px; border-top: 0; }
+.uf-section--hero { padding: 80px 0 96px; border-top: 0; }
 .uf-section--inset { background: var(--void-2); }
 
 /* ============ Nav ============ */
@@ -129,7 +172,27 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   line-height: 0.94; letter-spacing: -0.055em;
   color: var(--cloud); margin: 22px 0 28px;
 }
-.uf-hero__h .mint { color: var(--mint); }
+.uf-hero__h .mint {
+  background: linear-gradient(
+    100deg,
+    #4ade80 0%,
+    #86EFAC 35%,
+    #bbf7d0 50%,
+    #86EFAC 65%,
+    #4ade80 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+          color: transparent;
+  animation: uf-mint-wave 7s linear infinite;
+}
+@keyframes uf-mint-wave {
+  0%   { background-position:   0% 50%; }
+  100% { background-position: 220% 50%; }
+}
 .uf-hero__sub { font-size: 19px; line-height: 1.6; color: var(--cloud-2); max-width: 52ch; margin: 0 0 36px; }
 .uf-hero__cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .uf-hero__hint {

@@ -1,4 +1,4 @@
-/* global React, Nav, Hero, TheLeakSection, ROISection, ServicesSection, ProcessSection, TestimonialsSection, ClosingSection, Footer, FloatingAgent */
+/* global React, Nav, Hero, TheLeakSection, ROISection, ServicesSection, ProcessSection, TestimonialsSection, ClosingSection, Footer, FloatingAgent, RevealController */
 
 function App() {
   const onBook = () => {
@@ -7,6 +7,7 @@ function App() {
   };
   return (
     <div className="uf-page upframe">
+      <RevealController />
       <Nav onBook={onBook} />
       <main>
         <Hero onBook={onBook} />

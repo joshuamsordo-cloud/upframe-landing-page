@@ -76,13 +76,17 @@ function TestimonialsSection() {
     <section className="uf-section uf-section--inset" id="proof">
       <div className="uf-container">
         <div className="uf-sech">
-          <Eyebrow>PROOF</Eyebrow>
-          <h2 className="uf-sech__h">Owners who stopped <span className="mint">leaving money on the table.</span></h2>
-          <p className="uf-sech__sub">Every number below came off a Stripe dashboard, a QuickBooks export, or the call log.</p>
+          <Eyebrow data-reveal style={{ ['--reveal-delay']: '0ms' }}>PROOF</Eyebrow>
+          <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+            {splitWords(<>Owners who stopped <span className="mint">leaving money on the table.</span></>)}
+          </h2>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Every number below came off a Stripe dashboard, a QuickBooks export, or the call log.</p>
         </div>
         <div className="uf-testi">
           {TESTIS.map((t, i) => (
-            <TestiCard key={t.name} t={t} playing={playing === i} onPlay={() => setPlaying(playing === i ? null : i)} />
+            <div key={t.name} data-reveal style={{ ['--reveal-delay']: `${320 + i * 90}ms` }}>
+              <TestiCard t={t} playing={playing === i} onPlay={() => setPlaying(playing === i ? null : i)} />
+            </div>
           ))}
         </div>
       </div>
@@ -95,17 +99,19 @@ function ClosingSection({ onBook }) {
     <section className="uf-closing" id="closing">
       <div className="uf-dotgrid" />
       <div className="uf-container" style={{ position: 'relative', zIndex: 2 }}>
-        <Eyebrow dot pulse>BOOK A 30-MIN AUDIT · FREE</Eyebrow>
-        <h2 className="uf-closing__h">Every week you wait,<br />the gap <span className="mint">compounds.</span></h2>
-        <p className="uf-closing__sub">
+        <Eyebrow dot pulse data-reveal style={{ ['--reveal-delay']: '0ms' }}>BOOK A 30-MIN AUDIT · FREE</Eyebrow>
+        <h2 className="uf-closing__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+          {splitWords(<>Every week you wait,<br />the gap <span className="mint">compounds.</span></>)}
+        </h2>
+        <p className="uf-closing__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>
           One conversation. We map the leaks and put a number on each.
           Then we either build, or we don&apos;t.
         </p>
-        <div className="uf-closing__cta">
+        <div className="uf-closing__cta" data-reveal style={{ ['--reveal-delay']: '360ms' }}>
           <Btn variant="primary" size="lg" arrow onClick={onBook}>Book a call</Btn>
           <Btn variant="secondary" size="lg" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Back to top</Btn>
         </div>
-        <div className="uf-closing__meta">
+        <div className="uf-closing__meta" data-reveal style={{ ['--reveal-delay']: '480ms' }}>
           <span>NO CARD</span>
           <span>NO PITCH</span>
           <span>RESPONSE &lt; 4H</span>
