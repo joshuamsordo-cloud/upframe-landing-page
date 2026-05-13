@@ -346,11 +346,15 @@ function TheLeakSection() {
     <section className="uf-section" id="leak">
       <div className="uf-container">
         <div className="uf-sech">
-          <Eyebrow dot>THE LEAK</Eyebrow>
-          <h2 className="uf-sech__h">Same lead. <span className="mint">Two outcomes.</span></h2>
-          <p className="uf-sech__sub">Every week without systems is a week your competitors are pulling ahead. The gap compounds.</p>
+          <Eyebrow dot data-reveal style={{ ['--reveal-delay']: '0ms' }}>THE LEAK</Eyebrow>
+          <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+            {splitWords(<>Same lead. <span className="mint">Two outcomes.</span></>)}
+          </h2>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Every week without systems is a week your competitors are pulling ahead. The gap compounds.</p>
         </div>
-        <LeakPipes />
+        <div data-reveal style={{ ['--reveal-delay']: '320ms' }}>
+          <LeakPipes />
+        </div>
       </div>
     </section>
   );

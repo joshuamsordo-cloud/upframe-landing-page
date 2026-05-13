@@ -44,12 +44,14 @@ function ProcessSection() {
     <section className="uf-section" id="process">
       <div className="uf-container" style={{ position: 'relative' }}>
         <div className="uf-sech">
-          <Eyebrow>HOW IT GOES</Eyebrow>
-          <h2 className="uf-sech__h">From first call <span className="mint">to running systems.</span></h2>
-          <p className="uf-sech__sub">Auto-advances through each stage. Click any node to jump back — it picks up again after a few seconds.</p>
+          <Eyebrow data-reveal style={{ ['--reveal-delay']: '0ms' }}>HOW IT GOES</Eyebrow>
+          <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+            {splitWords(<>From first call <span className="mint">to running systems.</span></>)}
+          </h2>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Auto-advances through each stage. Click any node to jump back — it picks up again after a few seconds.</p>
         </div>
 
-        <div className="uf-timeline">
+        <div className="uf-timeline" data-reveal style={{ ['--reveal-delay']: '320ms' }}>
           <div className={"uf-timeline__autohint " + (paused ? '' : 'live')}>
             <span className="dot" />
             {paused ? 'PAUSED · RESUMES IN A FEW' : 'AUTO'}

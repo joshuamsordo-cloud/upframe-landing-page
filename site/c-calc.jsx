@@ -19,11 +19,13 @@ function ROISection({ onBook }) {
     <section className="uf-section uf-section--inset" id="calc">
       <div className="uf-container">
         <div className="uf-sech">
-          <Eyebrow amber dot pulse>WHAT IT&apos;S COSTING YOU</Eyebrow>
-          <h2 className="uf-sech__h">Run the numbers <span className="amber">on your own week.</span></h2>
-          <p className="uf-sech__sub">Most owners under-count by 2–3×. Drag the sliders honestly — then we&apos;ll talk.</p>
+          <Eyebrow amber dot pulse data-reveal style={{ ['--reveal-delay']: '0ms' }}>WHAT IT&apos;S COSTING YOU</Eyebrow>
+          <h2 className="uf-sech__h" data-reveal style={{ ['--reveal-delay']: '80ms', ['--word-base']: '80ms' }}>
+            {splitWords(<>Run the numbers <span className="amber">on your own week.</span></>)}
+          </h2>
+          <p className="uf-sech__sub" data-reveal style={{ ['--reveal-delay']: '240ms' }}>Most owners under-count by 2–3×. Drag the sliders honestly — then we&apos;ll talk.</p>
         </div>
-        <div className="uf-calc">
+        <div className="uf-calc" data-reveal style={{ ['--reveal-delay']: '320ms' }}>
           <div className="uf-calc__inputs">
             <div className="uf-field">
               <div className="uf-field__row">

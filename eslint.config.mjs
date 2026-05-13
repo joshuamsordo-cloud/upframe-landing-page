@@ -33,6 +33,8 @@ export default [
         Mark: "readonly",
         Wordmark: "readonly",
         Eyebrow: "readonly",
+        RevealController: "readonly",
+        splitWords: "readonly",
         Btn: "readonly",
         Nav: "readonly",
         Hero: "readonly",
