@@ -692,84 +692,125 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ============ Timeline ============ */
-.uf-timeline {
-  position: relative; padding: 8px 0 16px;
-}
-.uf-timeline__track {
+/* ============ Process Timeline ============ */
+.uf-ptl {
   position: relative;
-  height: 6px; background: var(--steel); border-radius: 999px;
-  margin: 56px 0 80px;
+  margin-top: 56px;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
-.uf-timeline__fill {
-  position: absolute; left: 0; top: 0; bottom: 0;
-  background: linear-gradient(to right, var(--mint), rgba(134,239,172,0.4));
-  border-radius: 999px; transition: width 800ms var(--ease-out);
-}
-.uf-timeline__handle {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 22px; height: 22px; border-radius: 999px;
-  background: var(--mint); border: 3px solid var(--void);
-  box-shadow: var(--shadow-mint-glow);
-  transition: left 800ms var(--ease-out);
-  z-index: 4;
+
+.uf-ptl__rail {
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--steel);
+  transform: translateX(-50%);
+  z-index: 1;
   pointer-events: none;
 }
-.uf-timeline__node {
-  position: absolute; top: 50%; transform: translate(-50%, -50%);
-  width: 14px; height: 14px; border-radius: 999px;
-  background: var(--void); border: 2px solid var(--steel);
-  z-index: 2; cursor: pointer; padding: 0;
-  appearance: none; -webkit-appearance: none;
-  font: inherit; color: inherit;
-  transition: border-color 200ms var(--ease-out), background 200ms var(--ease-out), transform 200ms var(--ease-out);
-}
-.uf-timeline__node:hover { transform: translate(-50%, -50%) scale(1.2); border-color: var(--mint); }
-.uf-timeline__node.reached { border-color: var(--mint); }
-.uf-timeline__node.active  { background: var(--mint); border-color: var(--mint); }
-.uf-timeline__caption {
-  position: absolute; top: 28px; transform: translateX(-50%);
-  display: flex; flex-direction: column; gap: 2px; align-items: center;
-  white-space: nowrap; pointer-events: none;
-}
-.uf-timeline__caption .day {
-  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--cloud-3); transition: color 200ms;
-}
-.uf-timeline__caption.reached .day { color: var(--mint); }
-.uf-timeline__caption .lbl {
-  font-family: var(--font-display); font-size: 13px; font-weight: 500; color: var(--cloud-2); letter-spacing: -0.01em;
-}
-.uf-timeline__caption.active .lbl { color: var(--cloud); }
 
-.uf-timeline__panel {
-  margin-top: 36px;
-  background: var(--surface); border: 1px solid var(--steel); border-radius: 14px;
-  padding: 28px 32px; min-height: 180px;
-  display: grid; grid-template-columns: auto 1fr auto; gap: 32px; align-items: center;
+.uf-ptl__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 80px;
+  align-items: center;
 }
-.uf-timeline__panel-day {
-  font-family: var(--font-display); font-weight: 500;
-  font-size: clamp(48px, 6vw, 78px); letter-spacing: -0.045em; color: var(--mint);
-  line-height: 1; min-width: 110px;
+
+.uf-ptl__dot {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px; height: 12px;
+  border-radius: 999px;
+  background: var(--void);
+  border: 2px solid var(--steel);
+  z-index: 3;
+  transition:
+    background var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out);
+  animation: uf-pulse-subtle 2.4s ease-in-out infinite;
 }
-.uf-timeline__panel-h {
-  font-family: var(--font-display); font-weight: 500; font-size: 30px; color: var(--cloud);
-  letter-spacing: -0.025em; margin-bottom: 8px;
+.uf-ptl__row.is-active .uf-ptl__dot {
+  background: var(--mint); border-color: var(--mint);
+  animation: uf-pulse 1.8s ease-in-out infinite;
+  box-shadow: var(--shadow-mint-glow);
 }
-.uf-timeline__panel-d { font-size: 15px; color: var(--cloud-2); line-height: 1.6; max-width: 56ch; }
-.uf-timeline__panel-meta {
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+
+.uf-ptl__card {
+  appearance: none; -webkit-appearance: none;
+  text-align: left; font: inherit; color: inherit;
+  width: 100%; max-width: 440px;
+  background: var(--surface);
+  border: 1px solid var(--steel);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  cursor: pointer;
+  position: relative;
+  transition:
+    border-color 220ms var(--ease-out),
+    background 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out),
+    padding 220ms var(--ease-out);
+}
+.uf-ptl__row--left  .uf-ptl__card { grid-column: 1; justify-self: end; }
+.uf-ptl__row--right .uf-ptl__card { grid-column: 2; justify-self: start; }
+.uf-ptl__card:hover { border-color: var(--cloud-3); }
+
+.uf-ptl__row.is-active .uf-ptl__card {
+  border-color: var(--mint);
+  background: linear-gradient(180deg, rgba(134,239,172, 0.07), rgba(134,239,172, 0.02));
+  box-shadow: 0 0 0 1px rgba(134,239,172, 0.35), 0 8px 28px -16px rgba(134,239,172, 0.4);
+  padding: 18px 22px;
+}
+
+.uf-ptl__card-head { display: flex; align-items: center; gap: 14px; }
+.uf-ptl__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex: 0 0 36px;
+  border-radius: 10px;
+  background: var(--surface-2);
   color: var(--cloud-3);
+  transition: color 220ms var(--ease-out), background 220ms var(--ease-out);
 }
-.uf-timeline__autohint {
-  position: absolute; right: 0; top: 0;
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--cloud-3); display: flex; align-items: center; gap: 8px;
+.uf-ptl__row.is-active .uf-ptl__icon {
+  color: var(--mint);
+  background: rgba(134,239,172, 0.10);
 }
-.uf-timeline__autohint .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--cloud-3); }
-.uf-timeline__autohint.live .dot { background: var(--mint); animation: uf-pulse 2s infinite; }
-.uf-timeline__autohint.live { color: var(--mint); }
+.uf-ptl__titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.uf-ptl__day {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--cloud-3);
+  transition: color 200ms var(--ease-out);
+}
+.uf-ptl__row.is-active .uf-ptl__day { color: var(--mint); }
+.uf-ptl__title {
+  font-family: var(--font-display); font-weight: 500;
+  font-size: 18px; letter-spacing: -0.02em; color: var(--cloud-2);
+  transition: color 200ms var(--ease-out), font-size 220ms var(--ease-out);
+}
+.uf-ptl__row.is-active .uf-ptl__title { color: var(--cloud); font-size: 20px; }
+
+.uf-ptl__body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms var(--ease-out);
+}
+.uf-ptl__body-inner { overflow: hidden; min-height: 0; }
+.uf-ptl__row.is-active .uf-ptl__body { grid-template-rows: 1fr; }
+.uf-ptl__desc {
+  font-size: 14.5px; color: var(--cloud-2); line-height: 1.6;
+  margin: 12px 0 0 0;
+}
+
+@keyframes uf-pulse-subtle {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(134,239,172, 0.08); }
+  50%      { box-shadow: 0 0 0 4px rgba(134,239,172, 0.03); }
+}
 
 /* ============ Testimonials ============ */
 .uf-testi { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -930,9 +971,17 @@ body { font-family: var(--font-body); color: var(--cloud); line-height: 1.7; ove
   .uf-services { grid-template-columns: 1fr; }
   .uf-testi { grid-template-columns: 1fr; }
   .uf-calc { grid-template-columns: 1fr; gap: 32px; padding: 24px; }
-  .uf-timeline__panel { grid-template-columns: 1fr; gap: 16px; }
   .uf-foot__inner { grid-template-columns: 1fr 1fr; }
   .uf-nav__center { display: none; }
+}
+@media (max-width: 720px) {
+  .uf-ptl__rail { left: 18px; }
+  .uf-ptl__row { grid-template-columns: 1fr; column-gap: 0; padding-left: 48px; }
+  .uf-ptl__row--left .uf-ptl__card,
+  .uf-ptl__row--right .uf-ptl__card {
+    grid-column: 1; justify-self: stretch; width: 100%; max-width: none;
+  }
+  .uf-ptl__dot { left: 18px; }
 }
 @media (max-width: 640px) {
   .uf-section { padding: 80px 0; }
