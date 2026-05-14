@@ -62,18 +62,25 @@ const splitWords = (children) => {
 
 /* RevealController — single page-wide IntersectionObserver. Adds
    `.uf-revealed` to every `[data-reveal]` the first time it crosses the
-   viewport (with a 10% bottom margin so reveals trigger just before the
-   element enters fully). One-shot per element. */
+   viewport. Positive bottom rootMargin so reveals trigger just before
+   the element enters view. Reveals firing well after mount (scroll-
+   driven, not part of the initial above-the-fold cascade) drop their
+   `--reveal-delay` so they appear promptly instead of waiting for a
+   stagger slot that no longer makes sense. One-shot per element. */
 const RevealController = () => {
   useEffectPr(() => {
+    const mountedAt = performance.now();
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) {
         if (e.isIntersecting) {
+          if (performance.now() - mountedAt > 1200) {
+            e.target.style.setProperty('--reveal-delay', '0ms');
+          }
           e.target.classList.add('uf-revealed');
           io.unobserve(e.target);
         }
       }
-    }, { rootMargin: '0px 0px -10% 0px', threshold: 0 });
+    }, { rootMargin: '0px 0px 15% 0px', threshold: 0 });
     document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
     return () => io.disconnect();
   }, []);
