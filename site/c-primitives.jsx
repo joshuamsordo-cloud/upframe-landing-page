@@ -80,18 +80,32 @@ const RevealController = () => {
   return null;
 };
 
-const ArrowIcon = () => (
-  <svg className="uf-arrow__svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M5 12h14" />
-    <path d="M13 6l6 6-6 6" />
+const ChevronIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6" />
   </svg>
 );
 
-const Btn = ({ variant = 'primary', size, arrow, children, onClick, type }) => (
-  <button type={type || 'button'} className={`uf-btn uf-btn--${variant}${size ? ' uf-btn--' + size : ''}`} onClick={onClick}>
-    {children}{arrow && <span className="uf-arrow"><ArrowIcon /></span>}
-  </button>
+const DownChevron = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 9l6 6 6-6" />
+  </svg>
 );
+
+const Btn = ({ variant = 'primary', size, arrow, children, onClick, type }) => {
+  const isCta = variant === 'primary' || variant === 'urgent';
+  const hasPip = isCta && arrow !== false;
+  const hasInlineArrow = !isCta && arrow;
+  return (
+    <button type={type || 'button'} className={`uf-btn uf-btn--${variant}${size ? ' uf-btn--' + size : ''}`} onClick={onClick}>
+      <span className="uf-btn__label">
+        {children}
+        {hasInlineArrow && <span className="uf-btn__arrow" aria-hidden="true"><DownChevron /></span>}
+      </span>
+      {hasPip && <span className="uf-btn__pip" aria-hidden="true"><ChevronIcon /></span>}
+    </button>
+  );
+};
 
 /* ----------------------------- Nav ----------------------------- */
 
@@ -499,8 +513,8 @@ const Hero = ({ onBook }) => {
             Less drag. More momentum.
           </p>
           <div className="uf-hero__cta" data-reveal style={{ ['--reveal-delay']: '820ms' }}>
-            <Btn variant="primary" size="lg" arrow onClick={onBook}>Book a call</Btn>
-            <Btn variant="secondary" size="lg" onClick={() => {
+            <Btn variant="primary" size="xl" arrow onClick={onBook}>Book a call</Btn>
+            <Btn variant="secondary" size="lg" arrow onClick={() => {
               const el = document.getElementById('leak');
               if (el) window.scrollTo({ top: el.offsetTop - 64, behavior: 'smooth' });
             }}>See the leak</Btn>
